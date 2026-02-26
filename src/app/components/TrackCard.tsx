@@ -34,14 +34,12 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
   const isInCrate = crateCtx?.isInCrate ?? (() => false);
   const addingIds = crateCtx?.addingIds ?? new Set<string>();
   const is24k = crateCtx?.is24k ?? false;
-  const openPaywall = crateCtx?.openPaywall ?? (() => {});
+  const openPaywall = crateCtx?.openPaywall ?? (() => { });
   const isGuestAtLimit = crateCtx?.isGuestAtLimit ?? false;
   const isActive = currentTrack?.id.videoId === track.id.videoId;
   const inCrate = isInCrate(track.id.videoId);
   const isAdding = addingIds.has(track.id.videoId);
-  const thumb = track.source === 'soundcloud'
-    ? (track.snippet.thumbnails.high?.url || track.snippet.thumbnails.medium?.url || track.snippet.thumbnails.default?.url)
-    : getMaxResThumbnail(track.id.videoId);
+  const thumb = getMaxResThumbnail(track.id.videoId);
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -55,11 +53,11 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
   const handleCrate = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (inCrate) {
-      removeFromCrate(track.id.videoId);
+      removeFromCrate?.(track.id.videoId);
     } else if (!is24k && isGuestAtLimit) {
       openPaywall();
     } else {
-      addToCrate(track);
+      addToCrate?.(track);
     }
   };
 
@@ -75,19 +73,18 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
     return (
       <div
         onClick={handlePlay}
-        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer group transition-all duration-200 ${
-          isActive
-            ? 'bg-[#1a003a] border border-[#9D00FF]/60'
-            : 'bg-[#0F0022] border border-[#2A0060]/50 hover:border-[#9D00FF]/40 hover:bg-[#150030]'
-        }`}
+        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer group transition-all duration-200 ${isActive
+          ? 'bg-[#1a003a] border border-[#9D00FF]/60'
+          : 'bg-[#0F0022] border border-[#2A0060]/50 hover:border-[#9D00FF]/40 hover:bg-[#150030]'
+          }`}
       >
         {index !== undefined && (
-          <span className={`text-sm w-5 text-center font-mono ${isActive ? 'text-[#9D00FF]' : 'text-[#6B5F80]'}`}>
+          <span className={`text-sm w-5 text-center font-mono ${isActive ? 'text-[#9D00FF]' : 'text-[#3A3A4A]'}`}>
             {isActive && isPlaying ? '▶' : index + 1}
           </span>
         )}
         <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ background: '#0F0022' }}>
-          <img src={thumb} alt={track.snippet.title} className="w-full h-full object-cover scale-[1.15]" onError={(e) => handleThumbnailError(e, track.id.videoId)} />
+          <img src={thumb} alt={track.snippet.title} className="w-full h-full object-contain p-1" style={{ background: '#0d001e' }} onError={(e) => handleThumbnailError(e, track.id.videoId)} />
           <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             {isActive && isPlaying
               ? <Pause className="w-4 h-4 text-white" />
@@ -99,12 +96,12 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold truncate uppercase ${isActive ? 'text-[#9D00FF]' : 'text-white'}`}>
+          <p className={`text-sm font-semibold truncate ${isActive ? 'text-[#9D00FF]' : 'text-[#E0D8F0]'}`}>
             {truncate(formatTrackTitle(track.snippet.title, track.snippet.channelTitle), 60)}
           </p>
-          <p className="text-xs text-[#7B6F90] truncate">{formatArtistName(track.snippet.channelTitle)}</p>
+          <p className="text-xs text-[#5A3878] truncate">{formatArtistName(track.snippet.channelTitle)}</p>
         </div>
-        <span className="text-xs text-[#6B5F80] hidden sm:block flex-shrink-0">
+        <span className="text-xs text-[#3A3A4A] hidden sm:block flex-shrink-0">
           {formatDate(track.snippet.publishedAt)}
         </span>
         {/* Crate button (list) */}
@@ -126,17 +123,16 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
 
   return (
     <div
-      className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 ${
-        isActive
-          ? 'ring-2 ring-[#9D00FF] shadow-[0_0_20px_rgba(157,0,255,0.4)]'
-          : 'hover:shadow-[0_0_20px_rgba(157,0,255,0.2)]'
-      }`}
+      className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 ${isActive
+        ? 'ring-2 ring-[#9D00FF] shadow-[0_0_20px_rgba(157,0,255,0.4)]'
+        : 'hover:shadow-[0_0_20px_rgba(157,0,255,0.2)]'
+        }`}
       onClick={handlePlay}
       style={{ background: 'linear-gradient(135deg, #0F0022 0%, #160035 100%)' }}
     >
-      <div className="relative aspect-video">
-        <img src={thumb} alt={track.snippet.title} className="w-full h-full object-cover scale-[1.15]" onError={(e) => handleThumbnailError(e, track.id.videoId)} />
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent`} />
+      <div className="relative aspect-video bg-[#0d001e]">
+        <img src={thumb} alt={track.snippet.title} className="w-full h-full object-contain p-2" style={{ background: '#0d001e' }} onError={(e) => handleThumbnailError(e, track.id.videoId)} />
+        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none`} />
         <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           <button className="w-12 h-12 rounded-full bg-[#9D00FF] flex items-center justify-center shadow-[0_0_20px_rgba(157,0,255,0.6)] hover:scale-110 transition-transform">
             {isActive && isPlaying
@@ -171,7 +167,7 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
         </button>
       </div>
       <div className="p-3">
-        <p className={`text-sm font-bold leading-tight mb-1 uppercase ${isActive ? 'text-[#9D00FF]' : 'text-white'}`}>
+        <p className={`text-sm font-bold leading-tight mb-1 ${isActive ? 'text-[#9D00FF]' : 'text-white'}`}>
           {truncate(formatTrackTitle(track.snippet.title, track.snippet.channelTitle), 55)}
         </p>
         <p className="text-xs text-[#7B6F90]">{formatArtistName(track.snippet.channelTitle)}</p>

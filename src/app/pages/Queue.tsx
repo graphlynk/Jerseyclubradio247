@@ -23,11 +23,10 @@ export function Queue() {
         </div>
         <button
           onClick={toggleShuffle}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-            isShuffle
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isShuffle
               ? 'text-[#9D00FF] border-[#9D00FF]/60 bg-[#9D00FF]/10'
               : 'text-[#5B4F70] border-[#2A0060] hover:text-white'
-          }`}
+            }`}
         >
           <Shuffle className="w-3.5 h-3.5" />
           Shuffle {isShuffle ? 'On' : 'Off'}
@@ -62,7 +61,7 @@ export function Queue() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-white truncate uppercase">{currentTrack.snippet.title}</p>
+                <p className="font-bold text-white truncate">{currentTrack.snippet.title}</p>
                 <p className="text-sm text-[#9D00FF]">{formatArtistName(currentTrack.snippet.channelTitle)}</p>
                 <p className="text-xs text-[#5B4F70] mt-0.5">
                   Track {currentIndex + 1} of {tracks.length}

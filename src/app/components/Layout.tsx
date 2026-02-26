@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router';
 import { Radio, Zap, Search, ListMusic, RefreshCw, Gamepad2, MessageCircle, Film, ShoppingBag, Disc3, FileText, DollarSign, RotateCcw, Lock as LockIcon } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useCrateSafe } from '../context/CrateContext';
-import logoImg from "figma:asset/68b646f3633b265a1c7a40fc0fe58afec9893e27.png";
-import logoImgHQ from "figma:asset/5ce31cfe0af844a2755b8da803c35df56f763d71.png";
+import logoImg from "../../assets/68b646f3633b265a1c7a40fc0fe58afec9893e27.png";
+import logoImgHQ from "../../assets/5ce31cfe0af844a2755b8da803c35df56f763d71.png";
 import { Player } from './Player';
 import { SocialTicker } from './SocialTicker';
 import { SocialWidgets } from './SocialWidgets';
@@ -53,12 +53,22 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#06000F' }}>
-      <div className="flex flex-1 pb-[200px] md:pb-24">
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: '#06000F' }}>
+
+      {/* ── Animated Background Mesh ── */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-20"
+        style={{
+          background: 'radial-gradient(circle at 15% 50%, rgba(157, 0, 255, 0.15), transparent 25%), radial-gradient(circle at 85% 30%, rgba(65, 0, 153, 0.15), transparent 25%)',
+          animation: 'pulse 15s ease-in-out infinite alternate'
+        }}
+      />
+
+      <div className="flex flex-1 pb-[200px] md:pb-24 relative z-10">
         {/* Sidebar */}
         <aside
           className="hidden md:flex flex-col w-60 border-r border-[#1a0040] flex-shrink-0 sticky top-0 overflow-y-auto"
-          style={{ background: 'linear-gradient(180deg, #0A0018 0%, #06000F 100%)', height: 'calc(100vh - 72px)' }}
+          style={{ background: 'linear-gradient(180deg, rgba(10,0,24,0.95) 0%, rgba(6,0,15,0.95) 100%)', backdropFilter: 'blur(10px)', height: 'calc(100vh - 72px)' }}
         >
           {/* Logo */}
           <div className="p-6 border-b border-[#1a0040]">
@@ -73,7 +83,7 @@ export function Layout({ children }: LayoutProps) {
                 <p className="font-black text-white text-sm tracking-wide">JERSEY CLUB</p>
                 <p className="text-[10px] text-[#C084FC] font-semibold tracking-widest" style={{ textShadow: '0 0 4px #C084FC, 0 0 10px #9D00FF, 0 0 20px #9D00FF, 0 0 40px #7B00CC' }}>24/7 RADIO</p>
               </div>
-              
+
             </div>
           </div>
 
@@ -99,11 +109,10 @@ export function Layout({ children }: LayoutProps) {
                 <Link
                   key={path}
                   to={path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-black tracking-[0.15em] uppercase transition-all duration-200 ${
-                    active
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-black tracking-[0.15em] uppercase transition-all duration-200 ${active
                       ? 'text-white shadow-[0_0_12px_rgba(157,0,255,0.3)]'
                       : 'text-[#8B7AA8] hover:text-white hover:bg-[#0F0022]'
-                  }`}
+                    }`}
                   style={active ? { background: 'linear-gradient(135deg, #1a0040, #250050)', borderLeft: '3px solid #9D00FF' } : {}}
                 >
                   <Icon className={`w-5 h-5 ${active ? (isCrateItem && is24k ? '' : 'text-[#9D00FF]') : ''}`}
@@ -139,7 +148,7 @@ export function Layout({ children }: LayoutProps) {
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#9D00FF]' : ''}`} />
               {isRefreshing ? 'Refreshing...' : 'Refresh Tracks'}
             </button>
-            
+
             {/* removed "Powered by" line — moved to footer */}
           </div>
         </aside>
@@ -183,7 +192,7 @@ export function Layout({ children }: LayoutProps) {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C084FC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                     </svg>
                   </a>
                   {/* TikTok */}
@@ -194,7 +203,7 @@ export function Layout({ children }: LayoutProps) {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="#C084FC">
-                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/>
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
                     </svg>
                   </a>
                   {/* YouTube */}
@@ -205,7 +214,7 @@ export function Layout({ children }: LayoutProps) {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="#C084FC">
-                      <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/>
+                      <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" />
                     </svg>
                   </a>
                   {/* X / Twitter */}
@@ -216,7 +225,7 @@ export function Layout({ children }: LayoutProps) {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="#C084FC">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.26 5.632L18.245 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.26 5.632L18.245 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                     </svg>
                   </a>
                 </div>
@@ -292,9 +301,8 @@ export function Layout({ children }: LayoutProps) {
               <Link
                 key={path}
                 to={path}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold transition-colors opacity-100 ${
-                  active ? 'text-[#9D00FF]' : 'text-[#4B3F60]'
-                }`}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold transition-colors opacity-100 ${active ? 'text-[#9D00FF]' : 'text-[#4B3F60]'
+                  }`}
                 style={isCrateItem && is24k && active ? { color: '#fcf6ba' } : {}}
               >
                 <div className="relative">

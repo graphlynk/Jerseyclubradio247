@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShoppingBag, Clock, ChevronRight, Tag, Zap, Flame } from 'lucide-react';
 import { useLocation } from 'react-router';
-import hoodieOrange from 'figma:asset/8a5be03ab85c31365342b3e50b41bf5f678b22cb.png';
-import hoodieWhite from 'figma:asset/88fe763395081a4cd4dd4a6c922fb53652e0c717.png';
-import hoodieGray from 'figma:asset/900ca47e064e11fa35cb10891a0fd719e6f974bd.png';
+import hoodieOrange from '../../../assets/8a5be03ab85c31365342b3e50b41bf5f678b22cb.png';
+import hoodieWhite from '../../../assets/88fe763395081a4cd4dd4a6c922fb53652e0c717.png';
+import hoodieGray from '../../../assets/900ca47e064e11fa35cb10891a0fd719e6f974bd.png';
 
 interface Props {
   visible: boolean;
@@ -14,81 +14,81 @@ interface Props {
 // ─── Color variants ───────────────────────────────────────────────────────────
 const COLORWAYS = [
   { label: 'Safety Orange', hex: '#E8650A', img: hoodieOrange },
-  { label: 'White',         hex: '#F5F5F5', img: hoodieWhite  },
-  { label: 'Sport Grey',    hex: '#9E9E9E', img: hoodieGray   },
+  { label: 'White', hex: '#F5F5F5', img: hoodieWhite },
+  { label: 'Sport Grey', hex: '#9E9E9E', img: hoodieGray },
 ];
 
 // ─── EXACT store prices from jerseyclubradio.creator-spring.com ───────────────
 // "retail" is the inflated anchor (visual trick only — never a real price).
 // "price" is the EXACT price live on the store right now.
-const HOODIE   = { retail: 69.99, price: 49.95 };   // hoodie
-const TSHIRT   = { retail: 49.99, price: 34.95 };   // t-shirt
-const TOTE     = { retail: 42.99, price: 29.95 };   // tote bag
-const MUG      = { retail: 22.99, price: 15.99 };   // mug
+const HOODIE = { retail: 69.99, price: 49.95 };   // hoodie
+const TSHIRT = { retail: 49.99, price: 34.95 };   // t-shirt
+const TOTE = { retail: 42.99, price: 29.95 };   // tote bag
+const MUG = { retail: 22.99, price: 15.99 };   // mug
 
 // Savings helpers
 const pctOff = (r: number, p: number) => Math.round((1 - p / r) * 100);
 const HOODIE_SAVE = (HOODIE.retail - HOODIE.price).toFixed(2);
-const HOODIE_PCT  = pctOff(HOODIE.retail, HOODIE.price);               // 29%
+const HOODIE_PCT = pctOff(HOODIE.retail, HOODIE.price);               // 29%
 
 const OTHER_PRODUCTS = [
-  { label: 'T-Shirt',  emoji: '👕', retail: TSHIRT.retail, price: TSHIRT.price, pct: pctOff(TSHIRT.retail, TSHIRT.price) },
-  { label: 'Tote Bag', emoji: '🛍️', retail: TOTE.retail,   price: TOTE.price,   pct: pctOff(TOTE.retail,   TOTE.price)   },
-  { label: 'Mug',      emoji: '☕', retail: MUG.retail,    price: MUG.price,    pct: pctOff(MUG.retail,    MUG.price)    },
+  { label: 'T-Shirt', emoji: '👕', retail: TSHIRT.retail, price: TSHIRT.price, pct: pctOff(TSHIRT.retail, TSHIRT.price) },
+  { label: 'Tote Bag', emoji: '🛍️', retail: TOTE.retail, price: TOTE.price, pct: pctOff(TOTE.retail, TOTE.price) },
+  { label: 'Mug', emoji: '☕', retail: MUG.retail, price: MUG.price, pct: pctOff(MUG.retail, MUG.price) },
 ];
 
 // ─── Context-aware messaging by route ────────────────────────────────────────
 const CONTEXT_COPY: Record<string, { badge: string; headline: string; sub: string }> = {
   '/': {
-    badge:    '🎧 Vibing right now?',
+    badge: '🎧 Vibing right now?',
     headline: 'Rep the culture you live in.',
-    sub:      'Made for real ones — official Jersey Club Music merch.',
+    sub: 'Made for real ones — official Jersey Club Music merch.',
   },
   '/new-releases': {
-    badge:    '🔥 First to hear it.',
+    badge: '🔥 First to hear it.',
     headline: 'Now be first to wear it.',
-    sub:      'Fresh drops deserve fresh drip. Official Jersey Club merch.',
+    sub: 'Fresh drops deserve fresh drip. Official Jersey Club merch.',
   },
   '/dance-videos': {
-    badge:    '💃 You know the moves.',
+    badge: '💃 You know the moves.',
     headline: 'Now wear the culture.',
-    sub:      'Official merch for the dance floor and beyond.',
+    sub: 'Official merch for the dance floor and beyond.',
   },
   '/games': {
-    badge:    '🎮 You\'ve got that Jersey edge.',
+    badge: '🎮 You\'ve got that Jersey edge.',
     headline: 'Make the drip official.',
-    sub:      'Game hard, dress harder. Jersey Club Music.',
+    sub: 'Game hard, dress harder. Jersey Club Music.',
   },
   '/chat': {
-    badge:    '💬 Part of the fam.',
+    badge: '💬 Part of the fam.',
     headline: 'Look like you belong.',
-    sub:      'Rep the community. Official Jersey Club hoodie.',
+    sub: 'Rep the community. Official Jersey Club hoodie.',
   },
   '/search': {
-    badge:    '🔍 Deep in the music.',
+    badge: '🔍 Deep in the music.',
     headline: 'Go deeper with the gear.',
-    sub:      'For listeners who actually know. Jersey Club Music.',
+    sub: 'For listeners who actually know. Jersey Club Music.',
   },
   '/queue': {
-    badge:    '🎵 Your playlist, your identity.',
+    badge: '🎵 Your playlist, your identity.',
     headline: 'Wear what you listen to.',
-    sub:      'Official Jersey Club Music apparel. Ships worldwide.',
+    sub: 'Official Jersey Club Music apparel. Ships worldwide.',
   },
 };
 
 const DEFAULT_COPY = {
-  badge:    '🧡 Official Jersey Club Merch',
+  badge: '🧡 Official Jersey Club Merch',
   headline: 'Wear the culture.',
-  sub:      'Limited merch — Jersey Club Music. Direct from the studio.',
+  sub: 'Limited merch — Jersey Club Music. Direct from the studio.',
 };
 
 const STORE_URL = 'https://jerseyclubradio.creator-spring.com/';
 
 export function FlashSale({ visible, onDismiss }: Props) {
   const { pathname } = useLocation();
-  const [colorIdx, setColorIdx]     = useState(0);
-  const [timeLeft, setTimeLeft]     = useState(12 * 60);
-  const [imgLoaded, setImgLoaded]   = useState(false);
+  const [colorIdx, setColorIdx] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(12 * 60);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const [pricePulse, setPricePulse] = useState(false);
 
   // Countdown
@@ -119,9 +119,9 @@ export function FlashSale({ visible, onDismiss }: Props) {
   const secs = (timeLeft % 60).toString().padStart(2, '0');
 
   const baseRoute = '/' + pathname.split('/')[1];
-  const copy      = CONTEXT_COPY[baseRoute] ?? DEFAULT_COPY;
-  const current   = COLORWAYS[colorIdx];
-  const urgent    = timeLeft < 3 * 60;
+  const copy = CONTEXT_COPY[baseRoute] ?? DEFAULT_COPY;
+  const current = COLORWAYS[colorIdx];
+  const urgent = timeLeft < 3 * 60;
 
   return (
     <AnimatePresence>

@@ -3,7 +3,8 @@ import { usePlayer, usePlayerProgress } from '../context/PlayerContext';
 import { useCrateSafe } from '../context/CrateContext';
 import { GoldVinylRecord } from './GoldVinylRecord';
 import { TrackBrowser } from './TrackBrowser';
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat,
+import {
+  Play, Pause, SkipBack, SkipForward, Shuffle, Repeat,
   Volume2, VolumeX, Volume1, Loader2, Disc3, ListMusic, Radio
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -40,7 +41,7 @@ export function Player() {
   const isInCrate = crateCtx?.isInCrate ?? (() => false);
   const is24k = crateCtx?.is24k ?? false;
   const addingIds = crateCtx?.addingIds ?? new Set<string>();
-  const openPaywall = crateCtx?.openPaywall ?? (() => {});
+  const openPaywall = crateCtx?.openPaywall ?? (() => { });
   const isGuestAtLimit = crateCtx?.isGuestAtLimit ?? false;
 
   const [dropParticles, setDropParticles] = useState<{ id: number; x: number }[]>([]);
@@ -48,8 +49,8 @@ export function Player() {
   const [isBrowserOpen, setIsBrowserOpen] = useState(false);
 
   const videoId = currentTrack?.id.videoId || '';
-  const thumb = videoId ? getMaxResThumbnail(videoId) : currentTrack?.snippet.thumbnails.medium?.url || currentTrack?.snippet.thumbnails.default?.url;
-  const thumbHigh = videoId ? getMaxResThumbnail(videoId) : currentTrack?.snippet.thumbnails.high?.url || thumb;
+  const thumb = getMaxResThumbnail(videoId);
+  const thumbHigh = thumb;
   const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
   const VolumeIcon = volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
 
@@ -63,7 +64,7 @@ export function Player() {
   const handleCrate = () => {
     if (!currentTrack) return;
     if (inCrate) {
-      removeFromCrate(currentTrack.id.videoId);
+      removeFromCrate?.(currentTrack.id.videoId);
     } else if (!is24k && isGuestAtLimit) {
       openPaywall();
     } else {
@@ -74,7 +75,7 @@ export function Player() {
       }));
       setDropParticles(prev => [...prev, ...particles]);
       setTimeout(() => setDropParticles(prev => prev.filter(p => !particles.find(q => q.id === p.id))), 800);
-      addToCrate(currentTrack);
+      addToCrate?.(currentTrack);
     }
   };
 
@@ -116,13 +117,15 @@ export function Player() {
               <div
                 className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-500"
                 style={{
-                  ring: 'none',
                   boxShadow: inCrate
                     ? `0 0 0 2px ${is24k ? '#fcf6ba' : '#C084FC'}, 0 0 14px ${is24k ? 'rgba(191,149,63,0.6)' : 'rgba(192,132,252,0.5)'}`
                     : '0 0 0 1px rgba(157,0,255,0.5)',
                 }}
               >
-                <img src={thumb} alt="cover" className="w-full h-full object-cover" onError={(e) => handleThumbnailError(e, videoId)} />
+                <img src={thumb} alt="cover" className="w-full h-full object-contain p-1" style={{ background: '#0d001e' }} onError={(e) => handleThumbnailError(e, videoId)} />
+
+
+
                 {/* Gold shimmer overlay when saved + 24k */}
                 {inCrate && is24k && (
                   <div
@@ -145,13 +148,6 @@ export function Player() {
                     style={{ background: '#FF2D55', boxShadow: '0 0 5px #FF2D55', animation: 'pulse 1s ease-in-out infinite' }}
                   />
                   <span className="text-[9px] font-bold uppercase tracking-widest text-[#FF2D55]">Live</span>
-                  <span className="text-[9px] text-[#3B2F50] uppercase tracking-wider hidden lg:block">&#xb7; Jersey Club Radio</span>
-                  {listenerCount > 0 && (
-                    <span className="text-[9px] text-[#5B4F70] hidden lg:block">&#xb7; {listenerCount} listening</span>
-                  )}
-                  {totalVisitors > 0 && (
-                    null
-                  )}
                 </div>
               )}
               {isPlaying && !isRadioMode && (
@@ -177,7 +173,7 @@ export function Player() {
                 </div>
               )}
               <div className="flex items-center gap-1.5 min-w-0">
-                <p className="text-sm font-bold text-white truncate leading-tight uppercase min-w-0">
+                <p className="text-sm font-bold text-white truncate leading-tight min-w-0">
                   {currentTrack
                     ? truncate(formatTrackTitle(currentTrack.snippet.title, currentTrack.snippet.channelTitle), 35)
                     : playerReady ? 'Tuning in\u2026' : 'Loading\u2026'}
@@ -187,7 +183,7 @@ export function Player() {
                   transition={{ duration: 0.4 }}
                   className="flex-shrink-0"
                 >
-                  
+
                 </motion.div>
               </div>
               <p className="text-xs text-[#C084FC] truncate" style={{ textShadow: '0 0 6px #C084FC, 0 0 12px #C084FC, 0 0 24px #E0AAFF' }}>
@@ -208,15 +204,14 @@ export function Player() {
               <button
                 onClick={togglePlay}
                 disabled={!playerReady}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                  playerReady
-                    ? 'bg-[#9D00FF] hover:bg-[#B030FF] shadow-[0_0_16px_rgba(157,0,255,0.5)] hover:shadow-[0_0_24px_rgba(157,0,255,0.7)] active:scale-95'
-                    : 'bg-[#2a0060] cursor-not-allowed'
-                }`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${playerReady
+                  ? 'bg-[#9D00FF] hover:bg-[#B030FF] shadow-[0_0_16px_rgba(157,0,255,0.5)] hover:shadow-[0_0_24px_rgba(157,0,255,0.7)] active:scale-95'
+                  : 'bg-[#2a0060] cursor-not-allowed'
+                  }`}
               >
                 {!playerReady ? <Loader2 className="w-4 h-4 text-white animate-spin" />
                   : isPlaying ? <Pause className="w-4 h-4 text-white" />
-                  : <Play className="w-4 h-4 text-white ml-0.5" />}
+                    : <Play className="w-4 h-4 text-white ml-0.5" />}
               </button>
               <button onClick={nextTrack} className="text-[#9B8FB0] hover:text-white transition-colors">
                 <SkipForward className="w-5 h-5" />
@@ -254,7 +249,7 @@ export function Player() {
                   />
                 ))}
               </AnimatePresence>
-              
+
             </div>
 
             {/* Browse Tracks button */}
@@ -315,7 +310,7 @@ export function Player() {
                     : '0 0 0 1px rgba(255,255,255,0.2)',
                 }}
               >
-                <img src={thumb} alt="cover" className="w-full h-full object-cover" onError={(e) => handleThumbnailError(e, videoId)} />
+                <img src={thumb} alt="cover" className="w-full h-full object-contain p-0.5" style={{ background: '#0d001e' }} onError={(e) => handleThumbnailError(e, videoId)} />
                 {/* Gold shimmer overlay when saved + 24k */}
                 {inCrate && is24k && (
                   <div
@@ -335,12 +330,6 @@ export function Player() {
                 <div className="flex items-center gap-1 mb-0.5">
                   <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#FF2D55', animation: 'pulse 1s ease-in-out infinite' }} />
                   <span className="text-[8px] font-bold uppercase tracking-widest text-[#FF2D55]">Live</span>
-                  {listenerCount > 0 && (
-                    <span className="text-[8px] text-[#5B4F70]">&#xb7; {listenerCount}</span>
-                  )}
-                  {totalVisitors > 0 && (
-                    <span className="text-[8px] text-[#3B2F50]">&#xb7; {totalVisitors.toLocaleString()}</span>
-                  )}
                 </div>
               )}
               {isPlaying && !isRadioMode && (
@@ -356,7 +345,7 @@ export function Player() {
                   </button>
                 </div>
               )}
-              <p className="text-xs font-bold text-white truncate leading-tight uppercase drop-shadow-lg">
+              <p className="text-xs font-bold text-white truncate leading-tight drop-shadow-lg">
                 {currentTrack
                   ? truncate(formatTrackTitle(currentTrack.snippet.title, currentTrack.snippet.channelTitle), 40)
                   : playerReady ? 'Tuning in\u2026' : 'Loading\u2026'}
@@ -382,15 +371,14 @@ export function Player() {
               <button
                 onClick={togglePlay}
                 disabled={!playerReady}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                  playerReady
-                    ? 'bg-[#9D00FF] hover:bg-[#B030FF] shadow-[0_0_16px_rgba(157,0,255,0.5)] active:scale-95'
-                    : 'bg-[#2a0060] cursor-not-allowed'
-                }`}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${playerReady
+                  ? 'bg-[#9D00FF] hover:bg-[#B030FF] shadow-[0_0_16px_rgba(157,0,255,0.5)] active:scale-95'
+                  : 'bg-[#2a0060] cursor-not-allowed'
+                  }`}
               >
                 {!playerReady ? <Loader2 className="w-4 h-4 text-white animate-spin" />
                   : isPlaying ? <Pause className="w-4 h-4 text-white" />
-                  : <Play className="w-4 h-4 text-white ml-0.5" />}
+                    : <Play className="w-4 h-4 text-white ml-0.5" />}
               </button>
               <button onClick={nextTrack} className="text-white/50 active:text-white transition-colors p-1">
                 <SkipForward className="w-4 h-4" />

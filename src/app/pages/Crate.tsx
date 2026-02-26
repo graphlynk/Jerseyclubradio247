@@ -24,7 +24,7 @@ export function Crate() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgraded') === 'true' && !is24k) startPolling();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePlay = (videoId: string) => {
@@ -55,7 +55,7 @@ export function Crate() {
 
   const handleCopyKey = async () => {
     if (!secretKey) return;
-    try { await navigator.clipboard.writeText(secretKey); setCopiedKey(true); setTimeout(() => setCopiedKey(false), 2500); } catch {}
+    try { await navigator.clipboard.writeText(secretKey); setCopiedKey(true); setTimeout(() => setCopiedKey(false), 2500); } catch { }
   };
 
   if (isLoading) {
@@ -265,7 +265,7 @@ export function Crate() {
                     {/* Info */}
                     <div className="p-3 flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-bold truncate uppercase ${isActive ? 'text-[#C084FC]' : 'text-white'}`} style={isActive && is24k ? { color: '#fcf6ba' } : {}}>
+                        <p className={`text-sm font-bold truncate ${isActive ? 'text-[#C084FC]' : 'text-white'}`} style={isActive && is24k ? { color: '#fcf6ba' } : {}}>
                           {formatTrackTitle(item.title, item.channelTitle)}
                         </p>
                         <p className="text-xs text-[#7B6F90] truncate">{formatArtistName(item.channelTitle)}</p>

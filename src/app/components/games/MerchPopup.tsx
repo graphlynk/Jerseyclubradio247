@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Copy, Check, Flame, ShoppingBag } from 'lucide-react';
-import hoodieOrange from 'figma:asset/8a5be03ab85c31365342b3e50b41bf5f678b22cb.png';
+import hoodieOrange from '../../../assets/8a5be03ab85c31365342b3e50b41bf5f678b22cb.png';
 
 interface Props {
   visible: boolean;

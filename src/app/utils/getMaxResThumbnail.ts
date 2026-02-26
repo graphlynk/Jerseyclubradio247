@@ -1,25 +1,27 @@
+// @ts-ignore
+import logoFallback from '../../assets/68b646f3633b265a1c7a40fc0fe58afec9893e27.png';
+
 /**
- * Returns the sddefault (640x480, no black bars) YouTube thumbnail URL.
- * sddefault exists for virtually every YouTube video and has no black bars baked in.
+ * Always returns the JCR branded cover art for every track.
+ * This ensures consistent branding across the entire app.
  */
-export function getMaxResThumbnail(videoId: string): string {
-  return `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`;
+export function getMaxResThumbnail(_videoId: string): string {
+  return logoFallback;
 }
 
-export function getHqFallbackThumbnail(videoId: string): string {
-  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+export function getJcrLogoFallback(): string {
+  return logoFallback;
 }
 
 /**
- * onError handler for track thumbnail <img> tags.
- * Falls back: sddefault -> hqdefault (then stops to avoid infinite loops).
+ * onError handler — falls back to the local JCR logo if anything goes wrong.
  */
 export function handleThumbnailError(
   e: React.SyntheticEvent<HTMLImageElement>,
-  videoId: string
+  _videoId: string
 ) {
   const img = e.currentTarget;
-  if (img.src.includes('sddefault')) {
-    img.src = getHqFallbackThumbnail(videoId);
-  }
+  img.src = logoFallback;
+  img.style.objectFit = 'contain';
+  img.style.background = '#0d001e';
 }

@@ -109,22 +109,20 @@ export function MostPlayed() {
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#0D001E', border: '1px solid #1a0040' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#0A0716', border: '1px solid rgba(110,50,190,0.14)' }}>
       {/* Tab headers */}
       <div className="flex border-b border-[#1a0040]">
         <button onClick={() => setTab('top')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold transition-all ${
-            tab === 'top' ? 'text-[#FF0080]' : 'text-[#5B4F70] hover:text-white'
-          }`}
-          style={tab === 'top' ? { background: 'linear-gradient(to bottom, #FF008015, transparent)', borderBottom: '2px solid #FF0080' } : {}}>
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold transition-all ${tab === 'top' ? 'text-[#FF2277]' : 'text-[#4A3460] hover:text-white'
+            }`}
+          style={tab === 'top' ? { background: 'linear-gradient(to bottom, rgba(255,34,119,0.08), transparent)', borderBottom: '2px solid #FF2277' } : { borderBottom: '2px solid transparent' }}>
           <TrendingUp className="w-3.5 h-3.5" />
           MOST PLAYED
         </button>
         <button onClick={() => setTab('listeners')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold transition-all ${
-            tab === 'listeners' ? 'text-[#00FF88]' : 'text-[#5B4F70] hover:text-white'
-          }`}
-          style={tab === 'listeners' ? { background: 'linear-gradient(to bottom, #00FF8815, transparent)', borderBottom: '2px solid #00FF88' } : {}}>
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold transition-all ${tab === 'listeners' ? 'text-[#00FF88]' : 'text-[#4A3460] hover:text-white'
+            }`}
+          style={tab === 'listeners' ? { background: 'linear-gradient(to bottom, rgba(0,255,136,0.08), transparent)', borderBottom: '2px solid #00FF88' } : { borderBottom: '2px solid transparent' }}>
           <Globe className="w-3.5 h-3.5" />
           LIVE LISTENERS
           {listenerData && listenerData.totalActive > 0 && (
@@ -150,32 +148,33 @@ export function MostPlayed() {
                 <p className="text-[#5B4F70] text-sm">No play data yet. Start listening to populate!</p>
               </div>
             ) : (
-              topTracks.slice(0, 10).map((track, i) => (
+              topTracks.slice(0, 20).map((track, i) => (
                 <motion.div key={track.videoId}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
                   onClick={() => handlePlayTrack(track)}
-                  className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer group transition-all hover:bg-[#150030]"
-                  style={{ border: '1px solid transparent' }}>
+                  className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer group transition-all"
+                  style={{ border: '1px solid transparent' }}
+                  whileHover={{ backgroundColor: 'rgba(140,50,255,0.10)' }}>
                   {/* Rank */}
-                  <span className={`w-5 text-center font-mono text-sm font-black ${
-                    i === 0 ? 'text-[#FFD700]' : i === 1 ? 'text-[#C0C0C0]' : i === 2 ? 'text-[#CD7F32]' : 'text-[#3B2F50]'
-                  }`}>
+                  <span className={`w-5 text-center font-mono text-sm font-black ${i === 0 ? 'text-[#FFD700]' : i === 1 ? 'text-[#C0C0C0]' : i === 2 ? 'text-[#CD7F32]' : 'text-[#3B2F50]'
+                    }`}>
                     {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                   </span>
 
                   {/* Thumbnail */}
-                  <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0" style={{ background: '#0F0022' }}>
+                  <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-[#0d001e]">
                     {track.thumbnail ? (
                       <img
                         src={getMaxResThumbnail(track.videoId)}
                         alt=""
-                        className="w-full h-full object-cover scale-[1.15]"
+                        className="w-full h-full object-contain p-0.5"
+                        style={{ background: '#0d001e' }}
                         onError={(e) => handleThumbnailError(e, track.videoId)}
                       />
                     ) : (
-                      <div className="w-full h-full bg-[#1a003a] flex items-center justify-center">
+                      <div className="w-full h-full bg-[#0d001e] flex items-center justify-center">
                         <span className="text-base">🎵</span>
                       </div>
                     )}
@@ -186,16 +185,26 @@ export function MostPlayed() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white line-clamp-2 leading-tight uppercase group-hover:text-[#FF0080] transition-colors">
+                    <p className="text-sm font-bold text-white line-clamp-2 leading-tight group-hover:text-[#FF0080] transition-colors">
                       {track.title}
                     </p>
                     <p className="text-[10px] text-[#5B4F70] truncate mt-0.5">{formatArtistName(track.channelTitle)}</p>
                   </div>
 
-                  {/* Play count */}
-                  <div className="flex-shrink-0 text-right">
-                    <span className="text-xs font-mono font-bold text-[#FF0080]">{track.count}</span>
-                    <p className="text-[8px] text-[#3B2F50]">plays</p>
+                  {/* Play count with progress bar */}
+                  <div className="flex-shrink-0 w-16 text-right">
+                    <span style={{ fontSize: '15px', fontWeight: 800, color: '#FF2277' }}>{track.count}</span>
+                    <p className="text-[8px] text-[#3A3A4A]">plays</p>
+                    {/* Progress bar */}
+                    <div className="h-[3px] mt-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, (track.count / Math.max(1, topTracks[0]?.count || 1)) * 100)}%`,
+                          background: track.count >= 50 ? '#FF2277' : track.count >= 20 ? '#AA33FF' : '#6622CC',
+                        }}
+                      />
+                    </div>
                   </div>
                 </motion.div>
               ))

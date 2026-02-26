@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useLayoutEffect } from 'react';
 import { motion } from 'motion/react';
 import { usePlayer } from '../context/PlayerContext';
 import { useCrateSafe } from '../context/CrateContext';
@@ -25,28 +25,43 @@ function NowPlaying() {
   const isInCrate = crateCtx?.isInCrate ?? (() => false);
   const is24k = crateCtx?.is24k ?? false;
   const addingIds = crateCtx?.addingIds ?? new Set<string>();
-  const openPaywall = crateCtx?.openPaywall ?? (() => {});
+  const openPaywall = crateCtx?.openPaywall ?? (() => { });
   const isGuestAtLimit = crateCtx?.isGuestAtLimit ?? false;
   const videoId = currentTrack?.id.videoId || '';
-  const thumb = videoId ? getMaxResThumbnail(videoId) : currentTrack?.snippet.thumbnails.high?.url;
+  const thumb = getMaxResThumbnail(videoId);
   const [showShare, setShowShare] = useState(false);
 
   const inCrate = currentTrack ? isInCrate(currentTrack.id.videoId) : false;
   const isAdding = currentTrack ? addingIds.has(currentTrack.id.videoId) : false;
 
+  const textMeasureRef = useRef<HTMLDivElement>(null);
+  const [textWidth, setTextWidth] = useState<number | 'auto'>('auto');
+
+  useLayoutEffect(() => {
+    if (!textMeasureRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setTextWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(textMeasureRef.current);
+    return () => observer.disconnect();
+  }, [currentTrack]);
+
   const handleCrate = () => {
     if (!currentTrack) return;
-    if (inCrate) { removeFromCrate(currentTrack.id.videoId); }
-    else if (!is24k && isGuestAtLimit) { openPaywall(); }
-    else { addToCrate(currentTrack); }
+    if (inCrate) { removeFromCrate?.(currentTrack.id.videoId); }
+    else if (!is24k && isGuestAtLimit) { openPaywall?.(); }
+    else { addToCrate?.(currentTrack); }
   };
 
   return (
     <div
       className="relative rounded-3xl overflow-hidden p-2 md:p-8 mb-2 md:mb-8 transition-all duration-700"
       style={{
-        background: 'linear-gradient(135deg, #1a003a 0%, #0D001E 50%, #160035 100%)',
-        border: `1px solid ${inCrate && is24k ? 'rgba(191,149,63,0.3)' : 'rgba(157,0,255,0.15)'}`,
+        background: 'linear-gradient(160deg, #140B28, #100820, #180B2E)',
+        border: `1px solid ${inCrate && is24k ? 'rgba(191,149,63,0.3)' : 'rgba(140,60,240,0.2)'}`,
+        boxShadow: '0 8px 48px rgba(100,0,200,0.18)',
       }}
     >
       {/* Background glow — shifts gold when current track is in crate */}
@@ -67,14 +82,12 @@ function NowPlaying() {
             style={{
               boxShadow: inCrate && is24k
                 ? '0 0 0 3px #fcf6ba, 0 0 40px rgba(191,149,63,0.55), 0 0 80px rgba(191,149,63,0.25)'
-                : isPlaying
-                ? '0 0 40px rgba(157,0,255,0.5), 0 0 80px rgba(157,0,255,0.2)'
-                : '0 0 20px rgba(0,0,0,0.5)',
-              background: '#0F0022',
+                : 'none',
+              background: 'transparent',
             }}
           >
             {thumb ? (
-              <img src={thumb} alt="Now Playing" className="w-full h-full object-cover scale-[1.15]" onError={(e) => handleThumbnailError(e, videoId)} />
+              <img src={thumb} alt="Now Playing" className="w-full h-full object-contain" style={{ background: 'transparent' }} onError={(e) => handleThumbnailError(e, videoId)} />
             ) : (
               <div className="w-full h-full flex items-center justify-center" style={{ background: '#0F0022' }}>
                 <span className="text-6xl">🎵</span>
@@ -93,16 +106,6 @@ function NowPlaying() {
             )}
           </div>
 
-          {/* Pulsing border ring */}
-          {isPlaying && (
-            <div
-              className="absolute -inset-1 rounded-2xl opacity-50 pointer-events-none animate-pulse"
-              style={{
-                border: `2px solid ${inCrate && is24k ? '#fcf6ba' : '#9D00FF'}`,
-                boxShadow: `0 0 20px ${inCrate && is24k ? '#bf953f' : '#9D00FF'}`,
-              }}
-            />
-          )}
 
           {/* Floating vinyl record badge — bottom-right of album art (gold only) */}
           {currentTrack && is24k && inCrate && (
@@ -122,112 +125,165 @@ function NowPlaying() {
         </div>
 
         {/* Info + Controls */}
-        <div className="flex-1 text-center md:text-left">
-          <div className="flex items-center gap-2 justify-center md:justify-start mb-1 md:mb-3">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-xs font-bold text-red-400 tracking-widest">LIVE NOW</span>
-            {listenerCount > 0 && (
-              <span className="text-[10px] font-semibold text-[#5B4F70]">• {listenerCount} listening</span>
-            )}
-            {totalVisitors > 0 && (
-              <span className="text-[10px] font-semibold text-[#3B2F50]">• {totalVisitors.toLocaleString()} visited</span>
-            )}
-            <span
-              className="text-xs text-[#C084FC]"
-              style={{ textShadow: '0 0 6px #C084FC, 0 0 12px #C084FC, 0 0 24px #E0AAFF' }}
+        <div className="flex-1 text-center md:text-left flex flex-col justify-center overflow-hidden">
+
+          {/* DESKTOP LAYOUT (Horizontal) */}
+          <div className="hidden md:flex flex-row items-end gap-2 w-full mb-4 max-w-full">
+            {/* Animated outer container for text */}
+            <div
+              className="flex-shrink-0 overflow-hidden"
+              style={{
+                width: textWidth === 'auto' ? 'auto' : `${textWidth}px`,
+                transition: 'width 0.35s ease',
+              }}
             >
-              • 24/7 Jersey Club Radio
-            </span>
-            {/* 24k badge inline */}
-            {is24k && (
-              <span
-                className="ml-1 text-[9px] font-black px-1.5 py-0.5 rounded-full"
-                style={{ background: 'linear-gradient(90deg,#bf953f,#fcf6ba)', color: '#2a1000', animation: 'goldPulse 2s ease-in-out infinite' }}
-              >
-                24K
-              </span>
-            )}
+              {/* Inner measuring container */}
+              <div ref={textMeasureRef} className="inline-block whitespace-nowrap pr-2">
+                <div className="flex items-center gap-2 justify-start mb-1">
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                      background: '#FF2222',
+                      boxShadow: isPlaying ? '0 0 10px #FF2222, 0 0 22px #FF2222' : 'none',
+                      animation: isPlaying ? 'pulse 1.1s ease-in-out infinite' : 'none',
+                    }}
+                  />
+                  <span className="text-xs font-extrabold tracking-widest" style={{ color: '#FF3333', letterSpacing: '1.2px' }}>LIVE NOW</span>
+                  {is24k && (
+                    <span
+                      className="ml-1 text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                      style={{ background: 'linear-gradient(90deg,#bf953f,#fcf6ba)', color: '#2a1000', animation: 'goldPulse 2s ease-in-out infinite' }}
+                    >
+                      24K
+                    </span>
+                  )}
+                </div>
+
+                <h1 className="text-lg md:text-3xl font-black text-white mb-0.5 leading-tight pr-2">
+                  {currentTrack ? currentTrack.snippet.title : 'Jersey Club Radio'}
+                </h1>
+                <p className="font-semibold md:text-lg transition-colors duration-500" style={{ color: inCrate && is24k ? '#fcf6ba' : '#9D00FF' }}>
+                  {formatArtistName(currentTrack?.snippet.channelTitle) || 'Loading tracks...'}
+                </p>
+              </div>
+            </div>
+
+            {/* Fluid Waveform Container (Takes remaining space natively) */}
+            <div className="flex-1 flex justify-start overflow-hidden">
+              <Visualizer isPlaying={isPlaying} barCount={200} height={50} fade className="w-full flex-1" />
+            </div>
           </div>
 
-          <h1 className="text-lg md:text-2xl font-black text-white mb-0.5 md:mb-1 leading-tight uppercase">
-            {currentTrack ? currentTrack.snippet.title : 'Jersey Club Radio'}
-          </h1>
-          <p className="font-semibold mb-1 md:mb-4 transition-colors duration-500" style={{ color: inCrate && is24k ? '#fcf6ba' : '#9D00FF' }}>
-            {formatArtistName(currentTrack?.snippet.channelTitle) || 'Loading tracks...'}
-          </p>
-
-          <Visualizer isPlaying={isPlaying} barCount={40} height={50} className="mb-1 md:mb-4 justify-center md:justify-start hidden md:flex" />
-          <Visualizer isPlaying={isPlaying} barCount={30} height={28} className="mb-1 justify-center md:hidden" />
-
-          <div className="flex items-center gap-3 justify-center md:justify-start flex-wrap">
-            <button
-              onClick={togglePlay}
-              disabled={!playerReady}
-              className="flex items-center gap-2 px-5 py-1.5 md:px-6 md:py-2.5 rounded-full font-bold text-white text-sm transition-all disabled:opacity-50"
-              style={{
-                background: isPlaying
-                  ? 'linear-gradient(135deg, #FF0080, #9D00FF)'
-                  : 'linear-gradient(135deg, #9D00FF, #FF0080)',
-                boxShadow: '0 0 20px rgba(157,0,255,0.4)',
-              }}
-            >
-              {!playerReady
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
-                : isPlaying
-                ? <><span>⏸</span> Pause</>
-                : <><Play className="w-4 h-4" /> Tune In</>
-              }
-            </button>
-
-            {/* Crate drop button — hero-sized */}
-            <motion.button
-              onClick={handleCrate}
-              disabled={!currentTrack}
-              whileTap={{ scale: 0.88 }}
-              title={inCrate ? 'Remove from crate' : 'Drop to crate'}
-              className="flex items-center gap-2 px-3 md:px-4 py-2.5 rounded-full font-bold text-sm transition-all disabled:opacity-40"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-                color: inCrate ? '#fcf6ba' : 'rgba(191,149,63,0.75)',
-              }}
-            >
-              {isAdding ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  {/* Mobile: 24K Gold Vinyl — pointer-events-none so clicks reach the button */}
-                  <div className="md:hidden flex-shrink-0 overflow-visible pointer-events-none">
-                    <GoldVinylRecord
-                      is24k={inCrate || is24k}
-                      size={34}
-                      spinning={false}
-                    />
-                  </div>
-
-                  {/* Desktop: disc icon + text */}
-                  <Disc3
-                    className="w-4 h-4 hidden md:block flex-shrink-0"
-                    style={{ filter: inCrate ? 'drop-shadow(0 0 5px rgba(252,246,186,0.9))' : 'none' }}
-                  />
-                  <span className="hidden md:inline">
-                    {inCrate ? (is24k ? '24K SAVED' : 'IN CRATE') : 'SAVE TO CRATE'}
-                  </span>
-                </>
+          {/* MOBILE LAYOUT (Vertical Stack) */}
+          <div className="md:hidden flex flex-col items-center mb-4 w-full">
+            <div className="flex items-center gap-2 justify-center mb-1">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{
+                  background: '#FF2222',
+                  boxShadow: isPlaying ? '0 0 10px #FF2222, 0 0 22px #FF2222' : 'none',
+                  animation: isPlaying ? 'pulse 1.1s ease-in-out infinite' : 'none',
+                }}
+              />
+              <span className="text-xs font-extrabold tracking-widest" style={{ color: '#FF3333', letterSpacing: '1.2px' }}>LIVE NOW</span>
+              {is24k && (
+                <span
+                  className="ml-1 text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'linear-gradient(90deg,#bf953f,#fcf6ba)', color: '#2a1000', animation: 'goldPulse 2s ease-in-out infinite' }}
+                >
+                  24K
+                </span>
               )}
-            </motion.button>
+            </div>
 
-            {/* Share button */}
-            <button
-              onClick={() => currentTrack && setShowShare(true)}
-              disabled={!currentTrack}
-              className="flex items-center justify-center w-9 h-9 rounded-full transition-all active:scale-90 disabled:opacity-40 hover:bg-[#9D00FF]/15"
-              style={{ color: '#C084FC' }}
-              title="Share to Stories"
-            >
-              <Share className="w-5 h-5" />
-            </button>
+            <h1 className="text-lg font-black text-white mb-0.5 leading-tight text-center px-4 w-full truncate">
+              {currentTrack ? currentTrack.snippet.title : 'Jersey Club Radio'}
+            </h1>
+            <p className="font-semibold mb-2 transition-colors duration-500 text-center w-full truncate" style={{ color: inCrate && is24k ? '#fcf6ba' : '#9D00FF' }}>
+              {formatArtistName(currentTrack?.snippet.channelTitle) || 'Loading tracks...'}
+            </p>
+          </div>
+
+          {/* Wrapper to tightly fit buttons width on mobile so waveform aligns perfectly */}
+          <div className="flex justify-center md:justify-start w-full">
+            <div className="inline-flex flex-col items-stretch w-auto">
+
+              {/* Mobile waveform — aligned exactly to the edges of the buttons below it */}
+              <div className="md:hidden w-full mb-3 flex px-1">
+                <Visualizer isPlaying={isPlaying} barCount={40} height={26} fade className="w-full justify-between" />
+              </div>
+
+              <div className="flex items-center justify-between gap-3 md:justify-start flex-wrap">
+                <button
+                  onClick={togglePlay}
+                  disabled={!playerReady}
+                  className="flex items-center gap-2 px-5 py-1.5 md:px-6 md:py-2.5 rounded-full font-bold text-white text-sm transition-all disabled:opacity-50"
+                  style={{
+                    background: isPlaying
+                      ? 'linear-gradient(135deg, #FF0080, #9D00FF)'
+                      : 'linear-gradient(135deg, #9D00FF, #FF0080)',
+                    boxShadow: '0 0 20px rgba(157,0,255,0.4)',
+                  }}
+                >
+                  {!playerReady
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
+                    : isPlaying
+                      ? <><span>⏸</span> Pause</>
+                      : <><Play className="w-4 h-4" /> Tune In</>
+                  }
+                </button>
+
+                {/* Crate drop button — hero-sized */}
+                <motion.button
+                  onClick={handleCrate}
+                  disabled={!currentTrack}
+                  whileTap={{ scale: 0.88 }}
+                  title={inCrate ? 'Remove from crate' : 'Drop to crate'}
+                  className="flex items-center gap-2 px-3 md:px-4 py-2.5 rounded-full font-bold text-sm transition-all disabled:opacity-40"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    boxShadow: 'none',
+                    color: inCrate ? '#fcf6ba' : 'rgba(191,149,63,0.75)',
+                  }}
+                >
+                  {isAdding ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      {/* Mobile: 24K Gold Vinyl — pointer-events-none so clicks reach the button */}
+                      <div className="md:hidden flex-shrink-0 overflow-visible pointer-events-none">
+                        <GoldVinylRecord
+                          is24k={inCrate || is24k}
+                          size={34}
+                          spinning={false}
+                        />
+                      </div>
+
+                      {/* Desktop: disc icon + text */}
+                      <Disc3
+                        className="w-4 h-4 hidden md:block flex-shrink-0"
+                        style={{ filter: inCrate ? 'drop-shadow(0 0 5px rgba(252,246,186,0.9))' : 'none' }}
+                      />
+                      <span className="hidden md:inline">
+                        {inCrate ? (is24k ? '24K SAVED' : 'IN CRATE') : 'SAVE TO CRATE'}
+                      </span>
+                    </>
+                  )}
+                </motion.button>
+
+                {/* Share button */}
+                <button
+                  onClick={() => currentTrack && setShowShare(true)}
+                  disabled={!currentTrack}
+                  className="flex items-center justify-center w-9 h-9 rounded-full transition-all active:scale-90 disabled:opacity-40 hover:bg-[#9D00FF]/15"
+                  style={{ color: '#C084FC' }}
+                  title="Share to Stories"
+                >
+                  <Share className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -371,7 +427,7 @@ export function Home() {
                 <svg viewBox="60 56 90 90" fill="none" style={{ position: 'relative', zIndex: 2, width: 26, height: 26, overflow: 'visible' }}>
                   <path clipRule="evenodd" d={svgTt.p36b6c100} fill="#EE1D52" fillRule="evenodd" transform="translate(0.8 0.8)" opacity="0.9" />
                   <path clipRule="evenodd" d={svgTt.p329ca380} fill="#69C9D0" fillRule="evenodd" transform="translate(-0.8 -0.8)" opacity="0.9" />
-                  <path clipRule="evenodd" d={svgTt.p42dc440}  fill="white"   fillRule="evenodd" />
+                  <path clipRule="evenodd" d={svgTt.p42dc440} fill="white" fillRule="evenodd" />
                 </svg>
               </div>
             </a>
@@ -405,13 +461,13 @@ export function Home() {
       {/* Now Playing */}
       <NowPlaying />
 
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Two-column layout — same height for playlist and sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ alignItems: 'start' }}>
         {/* Playlist */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-2 md:mb-4">
+        <div className="lg:col-span-2 flex flex-col rounded-xl" style={{ height: 'calc(100vh - 300px)', background: '#0A0716', border: '1px solid rgba(110,50,190,0.14)', borderRadius: '12px' }}>
+          <div className="flex items-center justify-between mb-2 md:mb-4 p-4 pb-0">
             <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-              🎵 Playlist
+              🎵 Jersey Club Playlist
               <span
                 className="text-[10px] font-semibold text-[#E0AAFF] animate-pulse"
                 style={{ textShadow: '0 0 8px #9D00FF, 0 0 20px #9D00FF80, 0 0 40px #9D00FF40, 0 0 60px #9D00FF20' }}
@@ -449,16 +505,24 @@ export function Home() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-2">
-              {sortedTracks.map((track, i) => (
-                <TrackCard key={track.id.videoId} track={track} trackList={sortedTracks} index={i} variant="list" />
-              ))}
+            <div
+              className="overflow-y-auto rounded-b-xl flex-1"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(140,60,255,0.22) transparent',
+              }}
+            >
+              <div className="grid grid-cols-1 gap-2 pr-1 pb-4">
+                {sortedTracks.slice(0, 20).map((track, i) => (
+                  <TrackCard key={track.id.videoId} track={track} trackList={sortedTracks} index={i} variant="list" />
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Most Played sidebar */}
-        <div className="lg:col-span-1">
+        {/* Most Played sidebar — match playlist height, allow scroll */}
+        <div className="lg:col-span-1" style={{ height: 'calc(100vh - 300px)', overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(140,60,255,0.22) transparent' }}>
           <MostPlayed />
         </div>
       </div>

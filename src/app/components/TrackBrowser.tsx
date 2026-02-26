@@ -37,9 +37,9 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
 
   const filtered = query.trim()
     ? tracks.filter(t =>
-        t.snippet.title.toLowerCase().includes(query.toLowerCase()) ||
-        t.snippet.channelTitle.toLowerCase().includes(query.toLowerCase())
-      )
+      t.snippet.title.toLowerCase().includes(query.toLowerCase()) ||
+      t.snippet.channelTitle.toLowerCase().includes(query.toLowerCase())
+    )
     : tracks;
 
   const handleSelect = (track: typeof tracks[0]) => {
@@ -151,9 +151,7 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                 <div>
                   {filtered.map((track, i) => {
                     const isCurrent = currentTrack?.id.videoId === track.id.videoId;
-                    const thumb = track.source === 'soundcloud'
-                      ? track.snippet.thumbnails.default?.url
-                      : getMaxResThumbnail(track.id.videoId);
+                    const thumb = getMaxResThumbnail(track.id.videoId);
                     const title = formatTrackTitle(track.snippet.title, track.snippet.channelTitle);
                     const artist = formatArtistName(track.snippet.channelTitle);
 
@@ -183,9 +181,9 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                         </span>
 
                         {/* Thumbnail */}
-                        <div className="relative w-9 h-9 rounded overflow-hidden flex-shrink-0">
+                        <div className="relative w-9 h-9 rounded overflow-hidden flex-shrink-0 bg-[#0d001e]">
                           {thumb ? (
-                            <img src={thumb} alt="" className="w-full h-full object-cover" onError={(e) => handleThumbnailError(e, track.id.videoId)} />
+                            <img src={thumb} alt="" className="w-full h-full object-contain p-0.5" style={{ background: '#0d001e' }} onError={(e) => handleThumbnailError(e, track.id.videoId)} />
                           ) : (
                             <div className="w-full h-full bg-[#1a003a] flex items-center justify-center">
                               <Music2 className="w-3.5 h-3.5 text-[#5B4F70]" />
@@ -215,7 +213,7 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                         {/* Title + artist */}
                         <div className="min-w-0 flex-1">
                           <p
-                            className="text-xs font-semibold truncate uppercase leading-tight"
+                            className="text-xs font-semibold truncate leading-tight"
                             style={{ color: isCurrent ? '#C084FC' : 'white' }}
                           >
                             {title}

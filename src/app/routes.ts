@@ -1,24 +1,26 @@
 import { createBrowserRouter } from 'react-router';
 import Root, { PlayerWrapper } from './Root';
-import { Home } from './pages/Home';
-import { NewReleases } from './pages/NewReleases';
-import { Search } from './pages/Search';
-import { Queue } from './pages/Queue';
-import { Chat } from './pages/Chat';
-import { Games } from './pages/Games';
-import { Spades } from './pages/games/Spades';
-import { Blackjack } from './pages/games/Blackjack';
-import { Crossword } from './pages/games/Crossword';
-import { BeatMaker } from './pages/games/BeatMaker';
-import { Chess } from './pages/games/Chess';
-import { Checkers } from './pages/games/Checkers';
-import { DanceVideos } from './pages/DanceVideos';
-import { Merch } from './pages/Merch';
-import { Crate } from './pages/Crate';
-import { TermsOfService } from './pages/TermsOfService';
-import { PrivacyPolicy } from './pages/PrivacyPolicy';
-import { Pricing } from './pages/Pricing';
-import { RefundPolicy } from './pages/RefundPolicy';
+import { lazy } from 'react';
+
+const Home = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
+const NewReleases = lazy(() => import('./pages/NewReleases').then(m => ({ default: m.NewReleases })));
+const Search = lazy(() => import('./pages/Search').then(m => ({ default: m.Search })));
+const Queue = lazy(() => import('./pages/Queue').then(m => ({ default: m.Queue })));
+const Chat = lazy(() => import('./pages/Chat').then(m => ({ default: m.Chat })));
+const Games = lazy(() => import('./pages/Games').then(m => ({ default: m.Games })));
+const Spades = lazy(() => import('./pages/games/Spades').then(m => ({ default: m.Spades })));
+const Blackjack = lazy(() => import('./pages/games/Blackjack').then(m => ({ default: m.Blackjack })));
+const Crossword = lazy(() => import('./pages/games/Crossword').then(m => ({ default: m.Crossword })));
+const BeatMaker = lazy(() => import('./pages/games/BeatMaker').then(m => ({ default: m.BeatMaker })));
+const Chess = lazy(() => import('./pages/games/Chess').then(m => ({ default: m.Chess })));
+const Checkers = lazy(() => import('./pages/games/Checkers').then(m => ({ default: m.Checkers })));
+const DanceVideos = lazy(() => import('./pages/DanceVideos').then(m => ({ default: m.DanceVideos })));
+const Merch = lazy(() => import('./pages/Merch').then(m => ({ default: m.Merch })));
+const Crate = lazy(() => import('./pages/Crate').then(m => ({ default: m.Crate })));
+const TermsOfService = lazy(() => import('./pages/TermsOfService').then(m => ({ default: m.TermsOfService })));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const Pricing = lazy(() => import('./pages/Pricing').then(m => ({ default: m.Pricing })));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy').then(m => ({ default: m.RefundPolicy })));
 
 export const router = createBrowserRouter([
   {

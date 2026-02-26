@@ -35,10 +35,38 @@ export function PlayerWrapper() {
   );
 }
 
+import { Suspense } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useLocation } from 'react-router';
+
+// Simple neon-styled loader for route transitions
+function PageLoader() {
+  return (
+    <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+      <div className="w-8 h-8 rounded-full border-2 border-[#9D00FF]/20 border-t-[#C084FC] animate-spin" />
+    </div>
+  );
+}
+
 export default function Root() {
+  const location = useLocation();
+
   return (
     <Layout>
-      <Outlet />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="flex-1 flex flex-col min-h-full"
+        >
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </motion.div>
+      </AnimatePresence>
     </Layout>
   );
 }
