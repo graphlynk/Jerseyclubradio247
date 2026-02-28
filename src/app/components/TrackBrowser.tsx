@@ -1,30 +1,103 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { X, Search, Music2, Radio, Loader2 } from 'lucide-react';
+import { useCrateSafe } from '../context/CrateContext';
+import { X, Search, Music2, Radio, Loader2, Disc3, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import { formatArtistName } from '../utils/formatArtistName';
 import { formatTrackTitle } from '../utils/formatTrackTitle';
 import { getMaxResThumbnail, handleThumbnailError } from '../utils/getMaxResThumbnail';
+import type { Track } from '../context/PlayerContext';
 
 interface TrackBrowserProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const POLL_INTERVAL = 60_000; // check for new tracks every 60s
+const TOOLTIP_KEY = 'jcr_vinyl_tooltip_shown';
+
 export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
-  const { tracks, currentTrack, playTrack, isLoading, isFetchingMore } = usePlayer();
+  const {
+    tracks, currentTrack, playTrack, isLoading, isFetchingMore,
+    refreshTracks, isRefreshing,
+  } = usePlayer();
+
+  const crateCtx = useCrateSafe();
+  const addToCrate = crateCtx?.addToCrate;
+  const removeFromCrate = crateCtx?.removeFromCrate;
+  const isInCrate = crateCtx?.isInCrate ?? (() => false);
+  const is24k = crateCtx?.is24k ?? false;
+  const addingIds = crateCtx?.addingIds ?? new Set<string>();
+  const openPaywall = crateCtx?.openPaywall ?? (() => {});
+  const isGuestAtLimit = crateCtx?.isGuestAtLimit ?? false;
+  const visitorId = crateCtx?.visitorId;
+
   const [query, setQuery] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [hasNewTracks, setHasNewTracks] = useState(false);
+  const prevTrackCountRef = useRef(0);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Show first-use tooltip
+  useEffect(() => {
+    if (!isOpen) return;
+    try {
+      const shown = localStorage.getItem(TOOLTIP_KEY);
+      if (!shown) {
+        setShowTooltip(true);
+        const timer = setTimeout(() => {
+          setShowTooltip(false);
+          localStorage.setItem(TOOLTIP_KEY, '1');
+        }, 4000);
+        return () => clearTimeout(timer);
+      }
+    } catch {}
+  }, [isOpen]);
 
   // Focus search when opened
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 250);
+      prevTrackCountRef.current = tracks.length;
     } else {
       setQuery('');
+      setHasNewTracks(false);
     }
   }, [isOpen]);
+
+  // Auto-poll for new tracks while panel is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const interval = setInterval(() => {
+      // Silently check — refreshTracks updates the tracks array in context
+      refreshTracks().catch(() => {});
+    }, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [isOpen, refreshTracks]);
+
+  // Detect when new tracks arrive
+  useEffect(() => {
+    if (!isOpen) return;
+    if (prevTrackCountRef.current > 0 && tracks.length > prevTrackCountRef.current) {
+      const newCount = tracks.length - prevTrackCountRef.current;
+      setHasNewTracks(true);
+      toast(
+        `${newCount} new track${newCount > 1 ? 's' : ''} added! \u2191 Scroll up to see latest`,
+        {
+          duration: 5000,
+          style: {
+            background: 'rgba(13,0,30,0.95)',
+            border: '1px solid rgba(157,0,255,0.5)',
+            color: '#C084FC',
+            fontSize: 13,
+          },
+        }
+      );
+    }
+    prevTrackCountRef.current = tracks.length;
+  }, [tracks.length, isOpen]);
 
   // Scroll to currently playing track when panel opens
   useEffect(() => {
@@ -45,6 +118,26 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
   const handleSelect = (track: typeof tracks[0]) => {
     playTrack(track, tracks);
     onClose();
+  };
+
+  const handleCrateTap = useCallback((e: React.MouseEvent, track: Track) => {
+    e.stopPropagation(); // Don't trigger row click (playTrack)
+    if (!track) return;
+    const videoId = track.id.videoId;
+    if (isInCrate(videoId)) {
+      removeFromCrate?.(videoId);
+    } else if (!is24k && isGuestAtLimit) {
+      openPaywall();
+    } else {
+      addToCrate?.(track);
+    }
+  }, [isInCrate, removeFromCrate, is24k, isGuestAtLimit, openPaywall, addToCrate]);
+
+  const handleRefresh = async () => {
+    setHasNewTracks(false);
+    await refreshTracks();
+    // Scroll to top after refresh
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -87,13 +180,32 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                 <span className="text-sm font-bold text-white uppercase tracking-widest">
                   On The Radio
                 </span>
-                {isFetchingMore && (
+                {(isFetchingMore || isRefreshing) && (
                   <Loader2 className="w-3 h-3 text-[#9D00FF] animate-spin ml-1" />
                 )}
-                <span className="text-[10px] text-[#3B2F50] ml-1 font-mono">
-                  {filtered.length} tracks
-                </span>
               </div>
+
+              {/* Refresh button */}
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-1 px-2 py-1 rounded-full transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                style={{
+                  background: hasNewTracks ? 'rgba(157,0,255,0.25)' : 'rgba(26,0,58,0.6)',
+                  border: `1px solid ${hasNewTracks ? 'rgba(157,0,255,0.7)' : 'rgba(42,0,96,0.6)'}`,
+                  color: hasNewTracks ? '#C084FC' : '#5B4F70',
+                }}
+              >
+                <RefreshCw
+                  className="w-3 h-3"
+                  style={{
+                    animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+                  }}
+                />
+                <span className="text-[9px] font-bold uppercase tracking-wider hidden sm:inline">
+                  {hasNewTracks ? 'New!' : 'Refresh'}
+                </span>
+              </button>
 
               {/* Search */}
               <div className="relative flex-1 max-w-sm mx-auto">
@@ -101,7 +213,7 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Search artist or title…"
+                  placeholder="Search artist or title\u2026"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   className="w-full text-xs pl-8 pr-4 py-2 rounded-full outline-none placeholder-[#3B2F50] text-white"
@@ -131,6 +243,27 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
               </button>
             </div>
 
+            {/* ── First-use tooltip ─────────────────────────────────────────── */}
+            <AnimatePresence>
+              {showTooltip && (
+                <motion.div
+                  className="mx-4 mt-2 px-3 py-2 rounded-lg text-center"
+                  style={{
+                    background: 'rgba(157,0,255,0.15)',
+                    border: '1px solid rgba(157,0,255,0.4)',
+                  }}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <span className="text-[11px] text-[#C084FC]">
+                    Tap the <Disc3 className="w-3 h-3 inline-block mx-0.5 -mt-0.5" /> vinyl to save to your crate
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* ── Track list ───────────────────────────────────────────────── */}
             <div
               ref={scrollRef}
@@ -140,7 +273,7 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <Loader2 className="w-6 h-6 text-[#9D00FF] animate-spin" />
-                  <span className="text-[#5B4F70] text-xs uppercase tracking-wider">Tuning in…</span>
+                  <span className="text-[#5B4F70] text-xs uppercase tracking-wider">Tuning in\u2026</span>
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
@@ -154,6 +287,8 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                     const thumb = getMaxResThumbnail(track.id.videoId);
                     const title = formatTrackTitle(track.snippet.title, track.snippet.channelTitle);
                     const artist = formatArtistName(track.snippet.channelTitle);
+                    const inCrate = isInCrate(track.id.videoId);
+                    const isAddingThis = addingIds.has(track.id.videoId);
 
                     return (
                       <button
@@ -177,7 +312,7 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                           className="text-[10px] font-mono w-5 text-right flex-shrink-0"
                           style={{ color: isCurrent ? '#9D00FF' : '#3B2F50' }}
                         >
-                          {isCurrent ? '▶' : i + 1}
+                          {isCurrent ? '\u25B6' : i + 1}
                         </span>
 
                         {/* Thumbnail */}
@@ -223,6 +358,29 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                           </p>
                         </div>
 
+                        {/* Vinyl / Crate save icon */}
+                        <motion.div
+                          className="flex-shrink-0 flex items-center justify-center"
+                          style={{ width: 32, height: 32 }}
+                          whileTap={{ scale: 0.75 }}
+                          onClick={(e) => handleCrateTap(e, track)}
+                        >
+                          {isAddingThis ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-[#C084FC]" />
+                          ) : (
+                            <Disc3
+                              className="w-[18px] h-[18px]"
+                              style={{
+                                color: inCrate ? '#FFD700' : '#5B4F70',
+                                filter: inCrate
+                                  ? 'drop-shadow(0 0 3px rgba(255,215,0,0.5)) drop-shadow(0 0 6px rgba(255,215,0,0.25))'
+                                  : 'none',
+                                transition: 'color 0.3s ease, filter 0.3s ease',
+                              }}
+                            />
+                          )}
+                        </motion.div>
+
                         {/* Now playing badge */}
                         {isCurrent && (
                           <div className="flex-shrink-0 flex items-center gap-1.5 ml-1">
@@ -245,13 +403,13 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
               )}
             </div>
 
-            {/* ── Footer hint ──────────────────────────────────────────────── */}
+            {/* ── Footer ──────────────────────────────────────────────────── */}
             <div
               className="flex-shrink-0 flex items-center justify-center py-2 gap-2"
               style={{ borderTop: '1px solid rgba(42,0,96,0.5)' }}
             >
-              <span className="text-[9px] text-[#2A0060] uppercase tracking-widest">
-                Jersey Club Radio · 24/7 Live Stream
+              <span className="text-[9px] text-[#3B2F50] uppercase tracking-widest">
+                {tracks.length} latest tracks &bull; Updated throughout the day
               </span>
             </div>
           </motion.div>

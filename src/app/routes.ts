@@ -47,7 +47,7 @@ export const router = createBrowserRouter([
           { path: 'games/checkers', Component: Checkers },
         ],
       },
-      // Legal pages — standalone layout (no sidebar/player)
+      // Legal pages — standalone layout (no sidebar/player chrome)
       { path: 'terms', Component: TermsOfService },
       { path: 'privacy', Component: PrivacyPolicy },
       { path: 'pricing', Component: Pricing },

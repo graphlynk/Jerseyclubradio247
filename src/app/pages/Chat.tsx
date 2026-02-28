@@ -218,7 +218,7 @@ export function Chat() {
   useEffect(() => {
     if (!joined) return;
     fetchMessages();
-    const interval = setInterval(fetchMessages, 2000);
+    const interval = setInterval(fetchMessages, 10_000);
     return () => clearInterval(interval);
   }, [joined, fetchMessages]);
 

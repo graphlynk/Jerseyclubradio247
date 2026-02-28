@@ -74,7 +74,7 @@ export function SocialTicker() {
 
     build();
 
-    // Refresh every 45 seconds to pull in new real events
+    // Refresh every 30 seconds to pull in new real events
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`${BASE}/ticker/events`, { headers: HEADERS });
@@ -87,7 +87,7 @@ export function SocialTicker() {
           });
         }
       } catch {}
-    }, 45_000);
+    }, 30_000);
 
     return () => clearInterval(interval);
   }, []);

@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowLeft, Radio, Shield } from 'lucide-react';
-import logoImg from "../../assets/68b646f3633b265a1c7a40fc0fe58afec9893e27.png";
+import logoImg from "figma:asset/68b646f3633b265a1c7a40fc0fe58afec9893e27.png";
 
 export function TermsOfService() {
   return (

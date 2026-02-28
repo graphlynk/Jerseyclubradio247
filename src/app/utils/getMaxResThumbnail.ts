@@ -1,5 +1,5 @@
 // @ts-ignore
-import logoFallback from '../../assets/68b646f3633b265a1c7a40fc0fe58afec9893e27.png';
+import logoFallback from 'figma:asset/68b646f3633b265a1c7a40fc0fe58afec9893e27.png';
 
 /**
  * Always returns the JCR branded cover art for every track.

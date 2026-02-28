@@ -69,8 +69,8 @@ interface PlayerProgressContextType {
 }
 
 // Default stub so components survive brief provider absence during HMR / React Refresh
-const NOOP = () => { };
-const NOOP_ASYNC = async () => { };
+const NOOP = () => {};
+const NOOP_ASYNC = async () => {};
 const NOOP_SEARCH = async (): Promise<Track[]> => [];
 const DEFAULT_PLAYER: PlayerContextType = {
   tracks: [], newReleases: [], currentTrack: null, currentIndex: 0,
@@ -102,11 +102,11 @@ const HEADERS = { Authorization: `Bearer ${publicAnonKey}` };
 
 // ─── DJ Crossfade constants ──────────────────────────────────────────────────
 // Two-phase crossfade: Phase 1 = solo fade-out, Phase 2 = overlap blend
-const CROSSFADE_TOTAL = 12;        // total seconds for the entire transition
-const LEAD_IN = 3;         // seconds of solo fade-out before incoming starts
-const OVERLAP = CROSSFADE_TOTAL - LEAD_IN; // seconds of both decks playing
-const UI_SWITCH_POINT = 9;         // seconds into crossfade when "now playing" switches
-const CROSSFADE_TICK = 40;        // ms between volume updates (25 fps for buttery smooth)
+const CROSSFADE_TOTAL    = 12;        // total seconds for the entire transition
+const LEAD_IN            = 3;         // seconds of solo fade-out before incoming starts
+const OVERLAP            = CROSSFADE_TOTAL - LEAD_IN; // seconds of both decks playing
+const UI_SWITCH_POINT    = 9;         // seconds into crossfade when "now playing" switches
+const CROSSFADE_TICK     = 40;        // ms between volume updates (25 fps for buttery smooth)
 const MIN_TRACK_FOR_XFADE = 25;       // don't crossfade tracks shorter than this
 
 const FETCH_MORE_THRESHOLD = 8;
@@ -114,7 +114,7 @@ const FETCH_MORE_THRESHOLD = 8;
 // Equal-power crossfade curve (standard DJ S-curve)
 // Prevents the perceived volume dip you get with linear fades
 function equalPowerOut(t: number): number { return Math.cos(t * Math.PI * 0.5); }
-function equalPowerIn(t: number): number { return Math.sin(t * Math.PI * 0.5); }
+function equalPowerIn(t: number): number  { return Math.sin(t * Math.PI * 0.5); }
 
 // ─── Utility: location + guest ID + play reporting (unchanged) ───────────────
 let cachedLocation: { city: string; country: string } | null = null;
@@ -134,11 +134,11 @@ function getGuestIdSync(): string {
   try {
     const stored = localStorage.getItem('jc_guest_profile_v1');
     if (stored) return JSON.parse(stored).id || 'Unknown';
-  } catch { }
+  } catch {}
   try {
     const fp = localStorage.getItem('jc_fp_v2');
     if (fp) return fp;
-  } catch { }
+  } catch {}
   return 'Unknown';
 }
 
@@ -173,44 +173,44 @@ type Engine = 'youtube' | 'soundcloud';
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // ─── Public state ────────────────────────────────────────────────────────
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [newReleases, setNewReleases] = useState<Track[]>([]);
-  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isShuffle, setIsShuffle] = useState(false);
-  const [isRepeat, setIsRepeat] = useState(false);
-  const [volume, setVolumeState] = useState(80);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [tracks, setTracks]                 = useState<Track[]>([]);
+  const [newReleases, setNewReleases]       = useState<Track[]>([]);
+  const [currentTrack, setCurrentTrack]     = useState<Track | null>(null);
+  const [currentIndex, setCurrentIndex]     = useState(0);
+  const [isPlaying, setIsPlaying]           = useState(false);
+  const [isShuffle, setIsShuffle]           = useState(false);
+  const [isRepeat, setIsRepeat]             = useState(false);
+  const [volume, setVolumeState]            = useState(80);
+  const [progress, setProgress]             = useState(0);
+  const [duration, setDuration]             = useState(0);
+  const [isLoading, setIsLoading]           = useState(true);
+  const [isRefreshing, setIsRefreshing]     = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
-  const [isRadioMode, setIsRadioMode] = useState(false);
-  const [listenerCount, setListenerCount] = useState(1);
-  const [totalVisitors, setTotalVisitors] = useState(0);
+  const [playerReady, setPlayerReady]       = useState(false);
+  const [isRadioMode, setIsRadioMode]       = useState(false);
+  const [listenerCount, setListenerCount]   = useState(1);
+  const [totalVisitors, setTotalVisitors]   = useState(0);
 
   // ─── Radio sync refs ────────────────────────────────────────────────────
   const radioModeRef = useRef(false);
   const lastDurationReportRef = useRef<string>(''); // videoId of last reported duration
   const personalModeStartRef = useRef<number>(0);   // timestamp when user entered personal mode
-  const reminderShownRef = useRef(false);        // only show toast once per personal session
+  const reminderShownRef     = useRef(false);        // only show toast once per personal session
 
   // ─── Dual-deck refs ──────────────────────────────────────────────────────
   // YouTube players
   const ytPlayerA = useRef<any>(null);
   const ytPlayerB = useRef<any>(null);
-  const ytReadyA = useRef(false);
-  const ytReadyB = useRef(false);
+  const ytReadyA  = useRef(false);
+  const ytReadyB  = useRef(false);
 
   // SoundCloud widgets
-  const scWidgetA = useRef<any>(null);
-  const scWidgetB = useRef<any>(null);
-  const scIframeA = useRef<HTMLIFrameElement | null>(null);
-  const scIframeB = useRef<HTMLIFrameElement | null>(null);
-  const scReadyA = useRef(false);
-  const scReadyB = useRef(false);
+  const scWidgetA  = useRef<any>(null);
+  const scWidgetB  = useRef<any>(null);
+  const scIframeA  = useRef<HTMLIFrameElement | null>(null);
+  const scIframeB  = useRef<HTMLIFrameElement | null>(null);
+  const scReadyA   = useRef(false);
+  const scReadyB   = useRef(false);
 
   // Which deck is currently the "live" deck the listener hears at full volume
   const activeDeckRef = useRef<DeckId>('A');
@@ -219,26 +219,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const deckEngineB = useRef<Engine>('youtube');
 
   // ─── Crossfade state ─────────────────────────────────────────────────────
-  const isCrossfadingRef = useRef(false);
-  const crossfadeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const crossfadeStartRef = useRef(0);       // Date.now() when crossfade began
-  const incomingDeckRef = useRef<DeckId>('B');
-  const incomingStartedRef = useRef(false);    // has incoming deck begun playing?
-  const uiSwitchedRef = useRef(false);    // has "now playing" UI flipped to incoming?
-  const pendingTrackRef = useRef<{ track: Track; index: number } | null>(null);
+  const isCrossfadingRef    = useRef(false);
+  const crossfadeTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const crossfadeStartRef   = useRef(0);       // Date.now() when crossfade began
+  const incomingDeckRef     = useRef<DeckId>('B');
+  const incomingStartedRef  = useRef(false);    // has incoming deck begun playing?
+  const uiSwitchedRef       = useRef(false);    // has "now playing" UI flipped to incoming?
+  const pendingTrackRef     = useRef<{ track: Track; index: number } | null>(null);
 
   // ─── Shared refs (same as before) ────────────────────────────────────────
-  const playlistRef = useRef<Track[]>([]);
-  const seenIdsRef = useRef<Set<string>>(new Set());
-  const currentIndexRef = useRef(0);
-  const currentTrackRef = useRef<Track | null>(null);
-  const isShuffleRef = useRef(false);
-  const isRepeatRef = useRef(false);
-  const isPlayingRef = useRef(false);
-  const isFetchingMoreRef = useRef(false);
-  const masterVolumeRef = useRef(80);
-  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const durationRef = useRef(0);
+  const playlistRef        = useRef<Track[]>([]);
+  const seenIdsRef         = useRef<Set<string>>(new Set());
+  const currentIndexRef    = useRef(0);
+  const currentTrackRef    = useRef<Track | null>(null);
+  const isShuffleRef       = useRef(false);
+  const isRepeatRef        = useRef(false);
+  const isPlayingRef       = useRef(false);
+  const isFetchingMoreRef  = useRef(false);
+  const masterVolumeRef    = useRef(80);
+  const progressTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const durationRef        = useRef(0);
 
   // Keep refs in sync
   useEffect(() => { isShuffleRef.current = isShuffle; }, [isShuffle]);
@@ -273,9 +273,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const engine = getDeckEngine(deck).current;
     const clampedVol = Math.max(0, Math.min(100, Math.round(vol)));
     if (engine === 'youtube') {
-      try { getYtPlayer(deck)?.setVolume(clampedVol); } catch { }
+      try { getYtPlayer(deck)?.setVolume(clampedVol); } catch {}
     } else {
-      try { getSafeSc(deck)?.setVolume(clampedVol); } catch { }
+      try { getSafeSc(deck)?.setVolume(clampedVol); } catch {}
     }
   }, []);
 
@@ -283,20 +283,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const pauseDeck = useCallback((deck: DeckId) => {
     const engine = getDeckEngine(deck).current;
     if (engine === 'youtube') {
-      try { getYtPlayer(deck)?.pauseVideo(); } catch { }
+      try { getYtPlayer(deck)?.pauseVideo(); } catch {}
     } else {
-      try { getSafeSc(deck)?.pause(); } catch { }
+      try { getSafeSc(deck)?.pause(); } catch {}
     }
   }, []);
 
   /** Hard-stop a deck — unlike pause, this fully unloads/stops audio to prevent leaks */
   const stopDeck = useCallback((deck: DeckId) => {
     // YouTube: stopVideo is more aggressive than pauseVideo — prevents auto-resume
-    try { getYtPlayer(deck)?.stopVideo(); } catch { }
-    try { getYtPlayer(deck)?.setVolume(0); } catch { }
+    try { getYtPlayer(deck)?.stopVideo(); } catch {}
+    try { getYtPlayer(deck)?.setVolume(0); } catch {}
     // SoundCloud: pause + mute
-    try { getSafeSc(deck)?.pause(); } catch { }
-    try { getSafeSc(deck)?.setVolume(0); } catch { }
+    try { getSafeSc(deck)?.pause(); } catch {}
+    try { getSafeSc(deck)?.setVolume(0); } catch {}
   }, []);
 
   /** Silence whichever deck is NOT the active one — call after any transition */
@@ -332,23 +332,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     if (isSC && track.soundcloudUrl) {
       // Ensure YT on this deck is paused
-      try { getYtPlayer(deck)?.pauseVideo(); } catch { }
+      try { getYtPlayer(deck)?.pauseVideo(); } catch {}
       const widget = getScWidget(deck);
       if (widget) {
         widget.load(track.soundcloudUrl, {
           auto_play: autoPlay,
           show_artwork: false,
           callback: () => {
-            try { widget.setVolume(Math.round(vol)); } catch { }
+            try { widget.setVolume(Math.round(vol)); } catch {}
           },
         });
       }
     } else {
       // Ensure SC on this deck is paused
-      try { getSafeSc(deck)?.pause(); } catch { }
+      try { getSafeSc(deck)?.pause(); } catch {}
       const yt = getYtPlayer(deck);
       if (yt) {
-        try { yt.setVolume(Math.round(vol)); } catch { }
+        try { yt.setVolume(Math.round(vol)); } catch {}
         if (autoPlay) {
           yt.loadVideoById(track.id.videoId);
         } else {
@@ -452,7 +452,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { ...HEADERS, 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId: vid, startedAt: Date.now(), durationSec: 0 }),
-      }).catch(() => { });
+      }).catch(() => {});
     }
 
     // Check if we need more tracks
@@ -510,9 +510,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           incomingStartedRef.current = true;
           const isSC = nextTrack.source === 'soundcloud';
           if (isSC && nextTrack.soundcloudUrl) {
-            try { getSafeSc(incoming)?.play(); } catch { }
+            try { getSafeSc(incoming)?.play(); } catch {}
           } else {
-            try { getYtPlayer(incoming)?.playVideo(); } catch { }
+            try { getYtPlayer(incoming)?.playVideo(); } catch {}
           }
           setDeckVolume(incoming, 0);
           reportPlay(nextTrack);
@@ -586,7 +586,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { ...HEADERS, 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId: next.id.videoId, startedAt: Date.now(), durationSec: 0 }),
-      }).catch(() => { });
+      }).catch(() => {});
     }
 
     const tracksRemaining = playlist.length - nextIdx;
@@ -657,10 +657,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (crossfadeTimerRef.current) { clearInterval(crossfadeTimerRef.current); crossfadeTimerRef.current = null; }
         isCrossfadingRef.current = false;
         // Hard-stop the errored deck so it doesn't leak audio
-        try { getYtPlayer(deck)?.stopVideo(); } catch { }
-        try { getYtPlayer(deck)?.setVolume(0); } catch { }
+        try { getYtPlayer(deck)?.stopVideo(); } catch {}
+        try { getYtPlayer(deck)?.setVolume(0); } catch {}
         // Restore active deck volume
-        try { setDeckVolume(activeDeckRef.current, masterVolumeRef.current); } catch { }
+        try { setDeckVolume(activeDeckRef.current, masterVolumeRef.current); } catch {}
         hardAdvanceRef.current();
       } else if (activeDeckRef.current === deck && !isCrossfadingRef.current) {
         hardAdvanceRef.current();
@@ -677,7 +677,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
               if (destroyed) return;
               ytReadyA.current = true;
               setPlayerReady(true);
-              try { ytPlayerA.current.setVolume(80); } catch { }
+              try { ytPlayerA.current.setVolume(80); } catch {}
               console.log('[Player] YouTube Deck A ready');
             },
             onStateChange: makeStateHandler('A'),
@@ -691,7 +691,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             onReady: () => {
               if (destroyed) return;
               ytReadyB.current = true;
-              try { ytPlayerB.current.setVolume(0); } catch { }
+              try { ytPlayerB.current.setVolume(0); } catch {}
               console.log('[Player] YouTube Deck B ready');
             },
             onStateChange: makeStateHandler('B'),
@@ -716,10 +716,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       destroyed = true;
-      try { containerA.remove(); } catch { }
-      try { containerB.remove(); } catch { }
-      try { ytPlayerA.current?.destroy(); } catch { }
-      try { ytPlayerB.current?.destroy(); } catch { }
+      try { containerA.remove(); } catch {}
+      try { containerB.remove(); } catch {}
+      try { ytPlayerA.current?.destroy(); } catch {}
+      try { ytPlayerB.current?.destroy(); } catch {}
     };
   }, []); // no deps — created once, uses refs for callbacks
 
@@ -753,7 +753,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const initWidget = (iframe: HTMLIFrameElement, deck: DeckId) => {
         const widget = window.SC.Widget(iframe);
         const widgetRef = deck === 'A' ? scWidgetA : scWidgetB;
-        const readyRef = deck === 'A' ? scReadyA : scReadyB;
+        const readyRef  = deck === 'A' ? scReadyA : scReadyB;
         widgetRef.current = widget;
         readyRef.current = true;
 
@@ -800,9 +800,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       destroyed = true;
-      try { iframeA.remove(); } catch { }
-      try { iframeB.remove(); } catch { }
-      try { script.remove(); } catch { }
+      try { iframeA.remove(); } catch {}
+      try { iframeB.remove(); } catch {}
+      try { script.remove(); } catch {}
     };
   }, []);
 
@@ -846,7 +846,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             sc.getDuration((dur: number) => {
               if (dur > 0) { setDuration(dur / 1000); durationRef.current = dur / 1000; }
             });
-          } catch { }
+          } catch {}
         }
       }
 
@@ -861,8 +861,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             // YT.PlayerState.PLAYING === 1
             if (state === 1) {
               console.warn(`[DJ] SAFETY: Inactive Deck ${inactive} was still playing! Force-stopping.`);
-              try { inactiveYt.stopVideo(); } catch { }
-              try { inactiveYt.setVolume(0); } catch { }
+              try { inactiveYt.stopVideo(); } catch {}
+              try { inactiveYt.setVolume(0); } catch {}
             }
           }
         }
@@ -895,7 +895,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                   }
                 }
               });
-            } catch { }
+            } catch {}
             return; // SC check is async, exit early
           }
         }
@@ -921,8 +921,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${BASE}/tracks`, { headers: HEADERS });
       const data = await res.json();
+      console.log(`[Player] fetchCachedTracks: server returned ${data.tracks?.length ?? 0} tracks (totalCached: ${data.totalCached ?? '?'})`);
       if (data.tracks?.length) {
         const trackList = (data.tracks.map(sanitizeTrack).filter(Boolean) as Track[]);
+        console.log(`[Player] After sanitize/filter: ${trackList.length} tracks`);
         trackList.forEach(t => seenIdsRef.current.add(t.id.videoId));
         setTracks(trackList);
         playlistRef.current = trackList;
@@ -950,22 +952,27 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchCachedTracks]);
 
-  // On mount: load cached tracks
+  // On mount: load cached tracks — auto-refresh if under 50 to fill toward 100
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
       try {
         const data = await fetchCachedTracks();
-        if (!data?.tracks?.length) {
-          // No cached tracks — kick off a refresh (but don't block loading forever)
-          refreshTracks().catch(e => console.log('[Player] Background refresh error:', e));
-          // Give the refresh a reasonable window, then clear loading anyway
-          await new Promise(resolve => setTimeout(resolve, 8000));
-          // Re-check if tracks arrived during the wait
-          const retry = await fetchCachedTracks();
-          if (!retry?.tracks?.length) {
-            console.log('[Player] Still no tracks after 8s — clearing loading state');
+        const cachedCount = data?.tracks?.length ?? 0;
+        console.log(`[Player] Init: cached ${cachedCount} tracks (totalCached on server: ${data?.totalCached ?? '?'})`);
+
+        if (cachedCount < 50) {
+          // Too few tracks — trigger a full server refresh to repopulate
+          console.log(`[Player] Only ${cachedCount} tracks cached — triggering refresh to reach 100`);
+          try {
+            const refreshRes = await fetch(`${BASE}/tracks/refresh`, { method: 'POST', headers: HEADERS, signal: AbortSignal.timeout(25000) });
+            const refreshData = await refreshRes.json();
+            console.log('[Player] Refresh result:', refreshData);
+          } catch (e) {
+            console.log('[Player] Background refresh error:', e);
           }
+          // Re-fetch the now-populated cache
+          await fetchCachedTracks();
         }
       } catch (e) {
         console.log('[Player] init error:', e);
@@ -1027,9 +1034,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (track) {
         // Resume
         if (engine === 'youtube') {
-          try { getYtPlayer(active)?.playVideo(); } catch { }
+          try { getYtPlayer(active)?.playVideo(); } catch {}
         } else {
-          try { getSafeSc(active)?.play(); } catch { }
+          try { getSafeSc(active)?.play(); } catch {}
         }
       } else if (tracks[0]) {
         playTrack(tracks[0], tracks);
@@ -1062,9 +1069,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const active = activeDeckRef.current;
       const engine = getDeckEngine(active).current;
       if (engine === 'soundcloud') {
-        try { getSafeSc(active)?.seekTo(0); } catch { }
+        try { getSafeSc(active)?.seekTo(0); } catch {}
       } else {
-        try { getYtPlayer(active)?.seekTo(0, true); } catch { }
+        try { getYtPlayer(active)?.seekTo(0, true); } catch {}
       }
       setProgress(0);
       return;
@@ -1086,7 +1093,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [cancelCrossfade, loadOnDeck, stopDeck]); // no `progress` dep — uses progressRef
 
   const toggleShuffle = useCallback(() => setIsShuffle(s => !s), []);
-  const toggleRepeat = useCallback(() => setIsRepeat(r => !r), []);
+  const toggleRepeat  = useCallback(() => setIsRepeat(r => !r), []);
 
   /** Set master volume — adjusts active deck (and both during crossfade) */
   const setVolume = useCallback((v: number) => {
@@ -1120,9 +1127,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const active = activeDeckRef.current;
     const engine = getDeckEngine(active).current;
     if (engine === 'soundcloud') {
-      try { getSafeSc(active)?.seekTo(t * 1000); } catch { }
+      try { getSafeSc(active)?.seekTo(t * 1000); } catch {}
     } else {
-      try { getYtPlayer(active)?.seekTo(t, true); } catch { }
+      try { getYtPlayer(active)?.seekTo(t, true); } catch {}
     }
     setProgress(t);
   }, [cancelCrossfade]);
@@ -1169,9 +1176,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         const activeDeck = activeDeckRef.current;
         const eng = getDeckEngine(activeDeck).current;
         if (eng === 'youtube') {
-          try { getYtPlayer(activeDeck)?.seekTo(seekSec, true); } catch { }
+          try { getYtPlayer(activeDeck)?.seekTo(seekSec, true); } catch {}
         } else {
-          try { getSafeSc(activeDeck)?.seekTo(seekSec * 1000); } catch { }
+          try { getSafeSc(activeDeck)?.seekTo(seekSec * 1000); } catch {}
         }
         setProgress(seekSec);
       }, 2000);
@@ -1212,7 +1219,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
               method: 'POST',
               headers: { ...HEADERS, 'Content-Type': 'application/json' },
               body: JSON.stringify({ videoId: tracks[nextIdx].id.videoId, startedAt: Date.now(), durationSec: 0 }),
-            }).catch(() => { });
+            }).catch(() => {});
             return;
           }
         }
@@ -1225,7 +1232,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           method: 'POST',
           headers: { ...HEADERS, 'Content-Type': 'application/json' },
           body: JSON.stringify({ videoId: tracks[0].id.videoId, startedAt: Date.now(), durationSec: 0 }),
-        }).catch(() => { });
+        }).catch(() => {});
       } catch (e) {
         console.log('[Radio] Server sync failed, starting from track 0:', e);
         startTrackInRadioMode(tracks[0], 0, 0);
@@ -1244,7 +1251,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       headers: { ...HEADERS, 'Content-Type': 'application/json' },
       body: JSON.stringify({ videoId: vid, durationSec: duration }),
-    }).catch(() => { });
+    }).catch(() => {});
   }, [currentTrack, duration]);
 
   // ── Heartbeat: tell the server we're listening (every 30s) ────────────────
@@ -1258,10 +1265,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { ...HEADERS, 'Content-Type': 'application/json' },
         body: JSON.stringify({ guestId }),
-      }).catch(() => { });
+      }).catch(() => {});
     };
     sendHeartbeat(); // immediate
-    const hbInterval = setInterval(sendHeartbeat, 30_000);
+    const hbInterval = setInterval(sendHeartbeat, 60_000);
 
     // Re-send heartbeat when tab/app becomes visible again (mobile screen-on)
     const onVisibilityChange = () => {
@@ -1281,10 +1288,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       fetch(`${BASE}/radio/listeners`, { headers: HEADERS })
         .then(r => r.json())
         .then(d => { if (d?.count) setListenerCount(d.count); if (d?.totalVisitors != null) setTotalVisitors(d.totalVisitors); })
-        .catch(() => { });
+        .catch(() => {});
     };
     poll();
-    const interval = setInterval(poll, 45_000);
+    const interval = setInterval(poll, 60_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1297,7 +1304,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Reset when re-entering radio mode
       personalModeStartRef.current = 0;
       reminderShownRef.current = false;
-      try { sessionStorage.removeItem(SS_KEY); } catch { }
+      try { sessionStorage.removeItem(SS_KEY); } catch {}
       return;
     }
     // Check sessionStorage on entry — if already shown this session, don't re-arm
@@ -1305,7 +1312,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (sessionStorage.getItem(SS_KEY) === '1') {
         reminderShownRef.current = true;
       }
-    } catch { }
+    } catch {}
     // Entered personal mode
     if (!personalModeStartRef.current) {
       personalModeStartRef.current = Date.now();
@@ -1313,7 +1320,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(() => {
       if (!radioModeRef.current && !reminderShownRef.current && isPlaying) {
         reminderShownRef.current = true;
-        try { sessionStorage.setItem(SS_KEY, '1'); } catch { }
+        try { sessionStorage.setItem(SS_KEY, '1'); } catch {}
         toast('🎵 The station is still live!', {
           description: 'Tap "Back to LIVE" in the player to rejoin the radio.',
           duration: 8000,
@@ -1355,7 +1362,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             method: 'POST',
             headers: { ...HEADERS, 'Content-Type': 'application/json' },
             body: JSON.stringify({ videoId: playlist[nextIdx].id.videoId, startedAt: Date.now(), durationSec: 0 }),
-          }).catch(() => { });
+          }).catch(() => {});
           return;
         }
       }
@@ -1384,9 +1391,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     try {
       const AC = window.AudioContext || (window as any).webkitAudioContext;
       if (AC) audioCtxRef.current = new AC();
-    } catch { }
+    } catch {}
     return () => {
-      try { audioCtxRef.current?.close(); } catch { }
+      try { audioCtxRef.current?.close(); } catch {}
     };
   }, []);
 
@@ -1394,7 +1401,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const resumeAudioContext = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (ctx && ctx.state === 'suspended') {
-      ctx.resume().catch(() => { });
+      ctx.resume().catch(() => {});
     }
   }, []);
 
@@ -1412,8 +1419,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!('mediaSession' in navigator) || !currentTrack) return;
     const thumb = currentTrack.source === 'soundcloud'
       ? (currentTrack.snippet.thumbnails.high?.url ||
-        currentTrack.snippet.thumbnails.medium?.url ||
-        currentTrack.snippet.thumbnails.default?.url || '')
+         currentTrack.snippet.thumbnails.medium?.url ||
+         currentTrack.snippet.thumbnails.default?.url || '')
       : getMaxResThumbnail(currentTrack.id.videoId);
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -1450,12 +1457,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ];
 
     for (const [action, handler] of handlers) {
-      try { ms.setActionHandler(action, handler); } catch { }
+      try { ms.setActionHandler(action, handler); } catch {}
     }
 
     return () => {
       for (const [action] of handlers) {
-        try { ms.setActionHandler(action, null); } catch { }
+        try { ms.setActionHandler(action, null); } catch {}
       }
     };
   }, [resumeAudioContext]);
@@ -1465,7 +1472,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!('mediaSession' in navigator)) return;
     try {
       navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-    } catch { }
+    } catch {}
   }, [isPlaying]);
 
   // ── Position state update on 1-second interval while playing ──────────────
@@ -1482,7 +1489,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             position: Math.min(progressRef.current, durationRef.current),
           });
         }
-      } catch { }
+      } catch {}
       return;
     }
 
@@ -1497,7 +1504,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             position: pos,
           });
         }
-      } catch { }
+      } catch {}
     }, 1000);
 
     return () => clearInterval(posInterval);

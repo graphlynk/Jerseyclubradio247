@@ -454,23 +454,135 @@ async function searchSoundCloud(query: string, clientId: string, limit = 20): Pr
   }
 }
 
-// Fetch SC tracks using rotating query pool (mirrors YouTube's fetchItems pattern)
+// Fetch SC tracks using rotating query pool — ALL queries fired in parallel
 async function fetchSCItems(queries: string[], clientId: string, maxPerQuery = 15): Promise<any[]> {
+  const results = await Promise.allSettled(
+    queries.map(async (query) => {
+      try {
+        return await searchSoundCloud(query, clientId, maxPerQuery);
+      } catch (e) {
+        console.log('[SC] Query fetch error:', query, e);
+        return [];
+      }
+    })
+  );
   const allItems: any[] = [];
   const seen = new Set<string>();
-  for (const query of queries) {
-    try {
-      const results = await searchSoundCloud(query, clientId, maxPerQuery);
-      for (const item of results) {
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      for (const item of r.value) {
         if (item.id?.videoId && !seen.has(item.id.videoId)) {
           seen.add(item.id.videoId);
           allItems.push(item);
         }
       }
-    } catch (e) { console.log('[SC] Query fetch error:', query, e); }
-    await new Promise(r => setTimeout(r, 300));
+    }
   }
   return allItems;
+}
+
+// ─── SoundCloud Playlist Resolver ───────────────────────────────────────────
+// Resolves a SoundCloud playlist/set URL into individual tracks via API v2.
+// This is the PRIMARY track source — the user's curated playlist.
+const CURATED_SC_PLAYLIST = "https://soundcloud.com/jersey-club-radio/sets/jersey-club-radio";
+
+async function fetchSCPlaylist(playlistUrl: string, clientId: string): Promise<any[]> {
+  try {
+    console.log('[SC Playlist] Resolving:', playlistUrl);
+    const resolveUrl = `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(playlistUrl)}&client_id=${clientId}`;
+    const res = await fetch(resolveUrl, {
+      signal: AbortSignal.timeout(15000),
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    });
+    if (!res.ok) {
+      console.log('[SC Playlist] Resolve failed:', res.status);
+      return [];
+    }
+    const data = await res.json();
+
+    // data.tracks is the ORDERED list from the playlist.
+    // Some entries are full objects, others are stubs with just { id }.
+    // We MUST preserve the original playlist order exactly.
+    const rawTracks: any[] = data.tracks || [];
+    console.log(`[SC Playlist] Found ${rawTracks.length} tracks in playlist`);
+
+    // Index full tracks by ID; collect stub IDs for hydration
+    const trackById = new Map<number, any>();
+    const stubIds: number[] = [];
+
+    for (const t of rawTracks) {
+      if (t.title && t.permalink_url) {
+        trackById.set(t.id, t);
+      } else if (t.id) {
+        stubIds.push(t.id);
+      }
+    }
+
+    // Hydrate stubs in parallel batches of 50
+    if (stubIds.length > 0) {
+      console.log(`[SC Playlist] Hydrating ${stubIds.length} stub tracks...`);
+      const batchSize = 50;
+      const batchPromises: Promise<void>[] = [];
+      for (let i = 0; i < stubIds.length; i += batchSize) {
+        const batch = stubIds.slice(i, i + batchSize);
+        batchPromises.push((async () => {
+          const idsParam = batch.join(',');
+          try {
+            const hydrateUrl = `https://api-v2.soundcloud.com/tracks?ids=${idsParam}&client_id=${clientId}`;
+            const hydrateRes = await fetch(hydrateUrl, {
+              signal: AbortSignal.timeout(10000),
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            });
+            if (hydrateRes.ok) {
+              const hydrated = await hydrateRes.json();
+              if (Array.isArray(hydrated)) {
+                for (const h of hydrated) {
+                  if (h.id) trackById.set(h.id, h);
+                }
+              }
+            }
+          } catch (e) {
+            console.log('[SC Playlist] Hydration batch error:', e);
+          }
+        })());
+      }
+      await Promise.all(batchPromises);
+    }
+
+    // Walk rawTracks IN ORIGINAL PLAYLIST ORDER — look up each by ID
+    const converted: any[] = [];
+    let skipped = 0;
+    for (const raw of rawTracks) {
+      const t = trackById.get(raw.id);
+      if (!t || !t.permalink_url || t.streamable === false) {
+        skipped++;
+        continue;
+      }
+      const artworkUrl = (t.artwork_url || t.user?.avatar_url || '').replace('-large', '-t500x500');
+      converted.push({
+        id: { videoId: `sc_${t.id}` },
+        snippet: {
+          title: t.title || 'Unknown Track',
+          channelTitle: t.user?.username || 'SoundCloud Artist',
+          description: t.description || '',
+          publishedAt: t.created_at || new Date().toISOString(),
+          thumbnails: {
+            default: { url: artworkUrl },
+            medium: { url: artworkUrl },
+            high: { url: artworkUrl },
+          },
+        },
+        source: 'soundcloud' as const,
+        soundcloudUrl: t.permalink_url,
+      });
+    }
+
+    console.log(`[SC Playlist] Converted ${converted.length} playable tracks in playlist order (${skipped} skipped)`);
+    return converted;
+  } catch (e) {
+    console.log('[SC Playlist] fetchSCPlaylist error:', e);
+    return [];
+  }
 }
 
 // Fallback: resolves curated URLs via oEmbed (no API key needed)
@@ -505,16 +617,72 @@ async function resolveSoundCloudTrack(scUrl: string): Promise<any | null> {
 
 app.get("/make-server-715f71b9/health", (c) => c.json({ status: "ok" }));
 
-// Get cached tracks
+// ── Genre filter — block non-Jersey-Club tracks at the server level ──────────
+const JERSEY_INDICATORS_SERVER = ['jersey club', 'jersey', 'jc ', 'jc-', 'jclub', 'newark club', 'brick bandits', 'sliink'];
+const BLOCKED_GENRE_RE_SERVER: RegExp[] = [
+  /\btech\s*house\b/i, /\blatin\s*house\b/i, /\bdeep\s*house\b/i,
+  /\bfuture\s*house\b/i, /\bprogressive\s*house\b/i, /\bbass\s*house\b/i,
+  /\bhouse\s*music\b/i,
+  /\b(?:afro|tribal|acid|minimal|soulful|melodic|organic)\s*house\b/i,
+  /\b(?:edm|electronic\s*dance|electronic\s*music)\b/i,
+  /\btechno\b/i,
+  /\blo[\s-]?fi\b/i, /\blofi\b/i,
+  /\btrap\s*(?:music|beat|mix|nation|city|type)\b/i,
+  /\bdrill\s*(?:music|beat|mix|type|rap)\b/i,
+  /\b(?:r&b|rnb|r\s*and\s*b)\s*(?:music|mix|vibes?|soul|slow\s*jam)/i,
+  /\bamapiano\b/i,
+  /\buk\s*garage\b/i, /\bukg\b/i,
+];
+
+function isBlockedGenreServer(title: string, channel: string): boolean {
+  const combined = `${title} ${channel}`.toLowerCase();
+  if (JERSEY_INDICATORS_SERVER.some(ind => combined.includes(ind))) return false;
+  return BLOCKED_GENRE_RE_SERVER.some(re => re.test(combined));
+}
+
+// Get cached tracks — return the 100 most recent, genre-filtered
 app.get("/make-server-715f71b9/tracks", async (c) => {
   try {
-    const tracks = await kv.get("jc_tracks_v2");
-    const newReleases = await kv.get("jc_new_releases_v2");
+    const allTracks = ((await kv.get("jc_tracks_v2")) as any[]) || [];
+    const newReleases = ((await kv.get("jc_new_releases_v2")) as any[]) || [];
     const lastRefresh = await kv.get("jc_last_refresh_v2");
+    // Retroactive genre filter on cached tracks — skip for curated SoundCloud playlist tracks
+    const filtered = allTracks.filter((t: any) =>
+      t.source === 'soundcloud' || !isBlockedGenreServer(t.snippet?.title || '', t.snippet?.channelTitle || '')
+    );
+    let tracks = filtered.slice(0, 100);
+
+    // Apply admin playlist order overrides if they exist
+    try {
+      const adminOrder = ((await kv.get('admin_playlist_order')) as string[]) || [];
+      if (adminOrder.length > 0) {
+        const orderMap = new Map(adminOrder.map((vid: string, idx: number) => [vid, idx]));
+        const ordered: any[] = [];
+        const unordered: any[] = [];
+        for (const t of tracks) {
+          const vid = t.id?.videoId;
+          if (vid && orderMap.has(vid)) {
+            ordered.push(t);
+          } else {
+            unordered.push(t);
+          }
+        }
+        ordered.sort((a: any, b: any) => (orderMap.get(a.id?.videoId) ?? 999) - (orderMap.get(b.id?.videoId) ?? 999));
+        tracks = [...ordered, ...unordered];
+      }
+    } catch (e) {
+      console.log("[Admin] playlist order apply error (non-critical):", e);
+    }
+
+    const filteredNR = newReleases.filter((t: any) =>
+      !isBlockedGenreServer(t.snippet?.title || '', t.snippet?.channelTitle || '')
+    );
     return c.json({
-      tracks: tracks || [],
-      newReleases: newReleases || [],
+      tracks,
+      newReleases: filteredNR,
       lastRefresh: lastRefresh || null,
+      totalCached: allTracks.length,
+      filteredCount: filtered.length,
     });
   } catch (error) {
     console.log("Get tracks error:", error);
@@ -532,87 +700,93 @@ app.post("/make-server-715f71b9/tracks/refresh", async (c) => {
     await kv.set("jc_query_index", 0);
     await kv.set("jc_sc_query_index", 0);
 
+    // Fire ALL queries in parallel for speed (avoids Edge Function timeouts)
     const fetchItems = async (queries: string[], order = "relevance", maxPerQuery = 15) => {
+      const results = await Promise.allSettled(
+        queries.map(async (query) => {
+          try {
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoCategoryId=10&maxResults=${maxPerQuery}&order=${order}&key=${apiKey}`;
+            const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+            const data = await res.json();
+            if (data.error) {
+              console.log("YouTube API error:", query, JSON.stringify(data.error));
+              return [];
+            }
+            return (data.items || []).map((item: any) => ({ ...item, source: 'youtube' }));
+          } catch (e) {
+            console.log("Query fetch error:", query, e);
+            return [];
+          }
+        })
+      );
       const allItems: any[] = [];
       const seen = new Set<string>();
-      for (const query of queries) {
-        try {
-          const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoCategoryId=10&maxResults=${maxPerQuery}&order=${order}&key=${apiKey}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          if (data.items) {
-            for (const item of data.items) {
-              if (item.id?.videoId && !seen.has(item.id.videoId)) {
-                seen.add(item.id.videoId);
-                allItems.push({ ...item, source: 'youtube' });
-              }
+      for (const r of results) {
+        if (r.status === 'fulfilled') {
+          for (const item of r.value) {
+            if (item.id?.videoId && !seen.has(item.id.videoId)) {
+              // Server-side genre filter — block non-JC genres before caching
+              const title = item.snippet?.title || '';
+              const channel = item.snippet?.channelTitle || '';
+              if (isBlockedGenreServer(title, channel)) continue;
+              seen.add(item.id.videoId);
+              allItems.push(item);
             }
-          } else if (data.error) {
-            console.log("YouTube API error:", query, JSON.stringify(data.error));
           }
-        } catch (e) {
-          console.log("Query fetch error:", query, e);
         }
-        await new Promise(r => setTimeout(r, 250));
       }
       return allItems;
     };
 
-    // ── Phase 1: Core YouTube queries (first 6 from expanded pool) ──
-    const initialQueries = QUERY_POOL.slice(0, 6);
-    const [ytTracks, newReleases] = await Promise.all([
-      fetchItems(initialQueries, "relevance"),
+    // ── PRIMARY SOURCE: Curated SoundCloud playlist ───────────────────────────
+    // The user's hand-picked playlist is the core of the radio station.
+    // YouTube search + SC search are used as supplements to fill toward 100.
+    const scClientId = await getSCClientId();
+    
+    const [curatedTracks, ytTracks, newReleases] = await Promise.all([
+      // Phase 1: Curated SoundCloud playlist (primary)
+      (async () => {
+        if (!scClientId) {
+          console.log('[SC Playlist] No client_id — falling back to curated URLs');
+          const resolved = await Promise.all(SOUNDCLOUD_FALLBACK_URLS.map(resolveSoundCloudTrack));
+          return resolved.filter(Boolean) as any[];
+        }
+        return await fetchSCPlaylist(CURATED_SC_PLAYLIST, scClientId);
+      })(),
+      // Phase 2: YouTube supplement (only fires in parallel)
+      (async () => {
+        const shuffledPool = [...QUERY_POOL].sort(() => Math.random() - 0.5);
+        const initialQueries = shuffledPool.slice(0, 8);
+        return await fetchItems(initialQueries, "relevance");
+      })(),
+      // Phase 3: New releases from YouTube
       fetchItems(NEW_RELEASE_QUERIES, "date", 10),
     ]);
-    console.log(`[YT] Core search: ${ytTracks.length} tracks from ${initialQueries.length} queries`);
 
-    // ── Phase 2: Cross-Platform Catalog Discovery ───────────────────────────
-    // Pull 8 random entries from the Spotify/Apple Music catalog and search YT
-    const catalogQueries = getCatalogSearchQueries(8);
-    const catalogTracks = await fetchItems(catalogQueries, "relevance", 5);
-    console.log(`[XPLAT] Cross-platform catalog: ${catalogTracks.length} tracks from ${catalogQueries.length} catalog queries`);
+    console.log(`[SC Playlist] Curated playlist: ${curatedTracks.length} tracks`);
+    console.log(`[YT] Supplement search: ${ytTracks.length} tracks`);
 
-    // Deduplicate catalog tracks against core YT tracks
-    const ytSeenIds = new Set(ytTracks.map((t: any) => t.id.videoId));
-    const uniqueCatalog = catalogTracks.filter((t: any) => !ytSeenIds.has(t.id.videoId));
+    // ── Merge: curated playlist first, then YouTube supplement ───────────────
+    // Curated tracks take priority — YouTube fills toward the 100-track target
+    const seenIds = new Set(curatedTracks.map((t: any) => t.id.videoId));
+    const ytSupplement = ytTracks.filter((t: any) => !seenIds.has(t.id.videoId));
+    
+    const mixedTracks = [...curatedTracks, ...ytSupplement];
+    console.log(`[REFRESH] Total: ${mixedTracks.length} tracks (Curated SC: ${curatedTracks.length}, YT supplement: ${ytSupplement.length})`);
 
-    // ── Phase 3: SoundCloud Dynamic search ──────────────────────────────────
-    let scTracks: any[] = [];
-    const scClientId = await getSCClientId();
-    if (scClientId) {
-      const scInitialQueries = SC_QUERY_POOL.slice(0, 6);
-      scTracks = await fetchSCItems(scInitialQueries, scClientId, 15);
-      console.log(`[SC] Dynamically fetched ${scTracks.length} SoundCloud tracks`);
-      await kv.set("jc_sc_query_index", 6);
-
-      // Also fetch SC "new releases" and mix into newReleases
-      const scNewReleases = await fetchSCItems(SC_NEW_RELEASE_QUERIES, scClientId, 10);
-      if (scNewReleases.length > 0) {
-        newReleases.push(...scNewReleases);
-        console.log(`[SC] Added ${scNewReleases.length} SC new releases`);
-      }
-    } else {
-      // Fallback to curated URL list via oEmbed
-      console.log('[SC] Dynamic search unavailable — falling back to curated URLs');
-      const resolved = await Promise.all(SOUNDCLOUD_FALLBACK_URLS.map(resolveSoundCloudTrack));
-      scTracks = resolved.filter(Boolean) as any[];
-    }
-
-    // ── Merge all sources: YouTube core + Cross-Platform catalog + SoundCloud ──
-    const mixedTracks = [...ytTracks, ...uniqueCatalog, ...scTracks];
-    console.log(`[REFRESH] Total: ${mixedTracks.length} tracks (YT: ${ytTracks.length}, Catalog: ${uniqueCatalog.length}, SC: ${scTracks.length})`);
-
-    await kv.set("jc_tracks_v2", mixedTracks);
+    // Keep only the latest 100 tracks to avoid unbounded growth
+    const finalTracks = mixedTracks.slice(0, 100);
+    await kv.set("jc_tracks_v2", finalTracks);
     await kv.set("jc_new_releases_v2", newReleases);
     await kv.set("jc_last_refresh_v2", new Date().toISOString());
-    await kv.set("jc_query_index", 6);
+    await kv.set("jc_query_index", 8);
     await kv.set("jc_catalog_index", 0);
 
     return c.json({
       success: true,
-      trackCount: mixedTracks.length,
+      trackCount: finalTracks.length,
       newReleasesCount: newReleases.length,
-      sources: { youtube: ytTracks.length, catalog: uniqueCatalog.length, soundcloud: scTracks.length },
+      sources: { curatedPlaylist: curatedTracks.length, youtube: ytSupplement.length },
     });
   } catch (error) {
     console.log("Refresh error:", error);
@@ -631,7 +805,17 @@ app.post("/make-server-715f71b9/tracks/more", async (c) => {
     const existingIds: string[] = body.existingIds || [];
     const existingSet = new Set<string>(existingIds);
 
-    // ─── YouTube rotation ────────────────────────────────────────────────
+    // ─── PRIMARY: Re-fetch curated SoundCloud playlist for missing tracks ──
+    const scClientId = await getSCClientId();
+    let curatedNewTracks: any[] = [];
+    if (scClientId) {
+      const curatedAll = await fetchSCPlaylist(CURATED_SC_PLAYLIST, scClientId);
+      curatedNewTracks = curatedAll.filter(t => !existingSet.has(t.id.videoId));
+      for (const t of curatedNewTracks) existingSet.add(t.id.videoId);
+      console.log(`[SC Playlist] Found ${curatedNewTracks.length} new tracks from curated playlist`);
+    }
+
+    // ─── YouTube rotation (supplement) ────────────────────────────────────
     const queryIndex = ((await kv.get("jc_query_index")) as number) || 0;
     const query = QUERY_POOL[queryIndex % QUERY_POOL.length];
     const nextIndex = (queryIndex + 1) % QUERY_POOL.length;
@@ -646,72 +830,24 @@ app.post("/make-server-715f71b9/tracks/more", async (c) => {
     if (data.items) {
       ytNewTracks = data.items
         .filter((item: any) => item.id?.videoId && !existingSet.has(item.id.videoId))
+        .filter((item: any) => !isBlockedGenreServer(item.snippet?.title || '', item.snippet?.channelTitle || ''))
         .map((item: any) => ({ ...item, source: 'youtube' }));
     } else {
       console.log("[YT] No items returned, YouTube error:", JSON.stringify(data.error || data));
     }
     await kv.set("jc_query_index", nextIndex);
 
-    // ─── Cross-Platform Catalog rotation (Spotify / Apple Music discovery) ──
-    let catalogNewTracks: any[] = [];
-    const catalogIndex = ((await kv.get("jc_catalog_index")) as number) || 0;
-    // Pick 3 catalog entries per rotation
-    const catalogSlice = CROSS_PLATFORM_CATALOG.slice(
-      catalogIndex % CROSS_PLATFORM_CATALOG.length,
-      (catalogIndex % CROSS_PLATFORM_CATALOG.length) + 3
-    );
-    // Handle wrap-around
-    const wrappedCatalog = catalogSlice.length < 3
-      ? [...catalogSlice, ...CROSS_PLATFORM_CATALOG.slice(0, 3 - catalogSlice.length)]
-      : catalogSlice;
+    // Merge: curated playlist first, then YouTube supplement
+    const allNewTracks = [...curatedNewTracks, ...ytNewTracks];
+    console.log(`[MORE] Total: ${allNewTracks.length} new tracks (Curated SC: ${curatedNewTracks.length}, YT: ${ytNewTracks.length})`);
 
-    for (const entry of wrappedCatalog) {
-      const searchQ = entry.artist === "jersey club" ? entry.title : `${entry.artist} ${entry.title}`;
-      try {
-        const catUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQ)}&type=video&videoCategoryId=10&maxResults=3&order=relevance&key=${apiKey}`;
-        const catRes = await fetch(catUrl);
-        const catData = await catRes.json();
-        if (catData.items) {
-          for (const item of catData.items) {
-            if (item.id?.videoId && !existingSet.has(item.id.videoId)) {
-              catalogNewTracks.push({ ...item, source: 'youtube' });
-              existingSet.add(item.id.videoId); // prevent dupes with YT results
-            }
-          }
-        }
-      } catch (e) { console.log('[XPLAT] Catalog query error:', searchQ, e); }
-      await new Promise(r => setTimeout(r, 200));
-    }
-    const nextCatalogIndex = (catalogIndex + 3) % CROSS_PLATFORM_CATALOG.length;
-    await kv.set("jc_catalog_index", nextCatalogIndex);
-    console.log(`[XPLAT] Got ${catalogNewTracks.length} cross-platform tracks from catalog [${catalogIndex}→${nextCatalogIndex}]`);
-
-    // ─── SoundCloud rotation (parallel with YouTube) ─────────────────────
-    let scNewTracks: any[] = [];
-    const scClientId = await getSCClientId();
-    if (scClientId) {
-      const scQueryIndex = ((await kv.get("jc_sc_query_index")) as number) || 0;
-      const scQuery = SC_QUERY_POOL[scQueryIndex % SC_QUERY_POOL.length];
-      const scNextIndex = (scQueryIndex + 1) % SC_QUERY_POOL.length;
-
-      console.log(`[SC] Fetching more tracks with query [${scQueryIndex}]: "${scQuery}"`);
-      const scResults = await searchSoundCloud(scQuery, scClientId, 15);
-      scNewTracks = scResults.filter(t => !existingSet.has(t.id.videoId));
-
-      await kv.set("jc_sc_query_index", scNextIndex);
-      console.log(`[SC] Got ${scNewTracks.length} new SC tracks from query "${scQuery}"`);
-    }
-
-    // Merge all three sources
-    const allNewTracks = [...ytNewTracks, ...catalogNewTracks, ...scNewTracks];
-    console.log(`[MORE] Total: ${allNewTracks.length} new tracks (YT: ${ytNewTracks.length}, Catalog: ${catalogNewTracks.length}, SC: ${scNewTracks.length})`);
-
-    // Append to persistent cache
+    // Append to persistent cache, cap at 150 to keep the latest 100 accessible
     const cached = ((await kv.get("jc_tracks_v2")) as any[]) || [];
     const cachedIds = new Set(cached.map((t: any) => t.id?.videoId));
     const toAdd = allNewTracks.filter((t: any) => !cachedIds.has(t.id.videoId));
     if (toAdd.length > 0) {
-      await kv.set("jc_tracks_v2", [...cached, ...toAdd]);
+      const merged = [...cached, ...toAdd].slice(-150);
+      await kv.set("jc_tracks_v2", merged);
     }
 
     return c.json({
@@ -719,7 +855,7 @@ app.post("/make-server-715f71b9/tracks/more", async (c) => {
       query,
       nextQueryIndex: nextIndex,
       newCount: allNewTracks.length,
-      sources: { youtube: ytNewTracks.length, catalog: catalogNewTracks.length, soundcloud: scNewTracks.length },
+      sources: { curatedPlaylist: curatedNewTracks.length, youtube: ytNewTracks.length },
     });
   } catch (error) {
     console.log("Fetch more error:", error);
@@ -3279,6 +3415,117 @@ app.get("/make-server-715f71b9/radio/visitors", async (c) => {
   } catch (e) {
     console.log("[Radio] visitors error:", e);
     return c.json({ totalUnique: 0, recentVisitors: [] });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ADMIN PANEL ROUTES
+//  Protected endpoints for managing playlist order and Most Played pins
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Helper: verify admin auth
+async function requireAdmin(c: any): Promise<{ userId: string } | Response> {
+  const accessToken = c.req.header('Authorization')?.split(' ')[1];
+  if (!accessToken) return c.json({ error: 'No auth token provided' }, 401);
+  try {
+    const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
+    if (error || !data?.user?.id) return c.json({ error: 'Unauthorized: invalid token' }, 401);
+    return { userId: data.user.id };
+  } catch (e) {
+    return c.json({ error: `Auth error: ${e}` }, 401);
+  }
+}
+
+// POST /admin/signup — create admin account (one-time use)
+app.post("/make-server-715f71b9/admin/signup", async (c) => {
+  try {
+    const { email, password, name } = await c.req.json();
+    if (!email || !password) return c.json({ error: 'Email and password required' }, 400);
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: { name: name || 'Admin' },
+      // Automatically confirm the user's email since an email server hasn't been configured.
+      email_confirm: true,
+    });
+    if (error) return c.json({ error: `Signup failed: ${error.message}` }, 400);
+    return c.json({ success: true, userId: data.user?.id });
+  } catch (e) {
+    console.log("[Admin] signup error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// GET /admin/most-played-pins — get pinned Most Played tracks
+app.get("/make-server-715f71b9/admin/most-played-pins", async (c) => {
+  try {
+    const pins = ((await kv.get('admin_most_played_pins')) as any[]) || [];
+    return c.json(pins);
+  } catch (e) {
+    console.log("[Admin] get pins error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// PUT /admin/most-played-pins — save pinned Most Played tracks (auth required)
+app.put("/make-server-715f71b9/admin/most-played-pins", async (c) => {
+  const auth = await requireAdmin(c);
+  if (auth instanceof Response) return auth;
+  try {
+    const pins = await c.req.json();
+    if (!Array.isArray(pins)) return c.json({ error: 'Expected array of pins' }, 400);
+    await kv.set('admin_most_played_pins', pins);
+    console.log(`[Admin] ${auth.userId} updated most-played pins: ${pins.length} entries`);
+    return c.json({ success: true });
+  } catch (e) {
+    console.log("[Admin] save pins error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// GET /admin/playlist-order — get custom playlist order overrides
+app.get("/make-server-715f71b9/admin/playlist-order", async (c) => {
+  try {
+    const order = ((await kv.get('admin_playlist_order')) as any[]) || [];
+    return c.json(order);
+  } catch (e) {
+    console.log("[Admin] get order error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// PUT /admin/playlist-order — save custom playlist order (auth required)
+app.put("/make-server-715f71b9/admin/playlist-order", async (c) => {
+  const auth = await requireAdmin(c);
+  if (auth instanceof Response) return auth;
+  try {
+    const order = await c.req.json();
+    if (!Array.isArray(order)) return c.json({ error: 'Expected array of videoIds' }, 400);
+    await kv.set('admin_playlist_order', order);
+    console.log(`[Admin] ${auth.userId} updated playlist order: ${order.length} entries`);
+    return c.json({ success: true });
+  } catch (e) {
+    console.log("[Admin] save order error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// GET /admin/all-tracks — returns all cached tracks for admin reordering
+app.get("/make-server-715f71b9/admin/all-tracks", async (c) => {
+  const auth = await requireAdmin(c);
+  if (auth instanceof Response) return auth;
+  try {
+    const allTracks = ((await kv.get("jc_tracks_v2")) as any[]) || [];
+    return c.json(allTracks.map((t: any) => ({
+      videoId: t.id?.videoId || '',
+      title: t.snippet?.title || 'Unknown',
+      channelTitle: t.snippet?.channelTitle || '',
+      thumbnail: t.snippet?.thumbnails?.default?.url || '',
+      source: t.source || 'youtube',
+    })));
+  } catch (e) {
+    console.log("[Admin] all-tracks error:", e);
+    return c.json({ error: String(e) }, 500);
   }
 });
 

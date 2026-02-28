@@ -8,21 +8,21 @@ import { usePlayer } from '../context/PlayerContext';
 import { useBPMPulse } from '../hooks/useBPMPulse';
 
 // ─── Actual product images from Creator Spring ────────────────────
-import imgIndustrialHoodie from '../../assets/3b28a70b73e6cfa88d35080f20eec3643a67e593.png';
-import imgIndustrialTee from '../../assets/ac831d7cc86290d293cd044d7057f9e579a230b2.png';
-import imgIndustrialMug from '../../assets/39d76e26f03123d839fd9d69460bdf495a8ed791.png';
-import imgIndustrialLongSleeve from '../../assets/d178debbb18f8c5c18c1f5a07accd42507235e6c.png';
-import imgCoreHoodie from '../../assets/a0723a74fccaec51c528e8de1f342adf43510ce8.png';
-import imgCoreHeavyTee from '../../assets/9bcff617a83e9eee47e2a99c963a04b301b59602.png';
-import imgCoreCrewneck from '../../assets/6e7fc25e4af20175b8a7ce484c467ea28e08461a.png';
-import imgCoreCrewTee from '../../assets/a7addac8ece682953f7a77a390a6e36a41da3f59.png';
-import imgCoreCropTee from '../../assets/26540902785a9fc7a0c83d08c5b1a0ef6832fdb3.png';
-import imgStreetHoodie from '../../assets/f0fcab775344a238aa4305d503f78c2a131f54f9.png';
-import imgCoreMug from '../../assets/af320ab21ab82a206745e18e45393b2a6615227f.png';
-import imgCoreLongSleeve from '../../assets/a4485c9b5ad1455e27c265c337d7bf38128902ec.png';
-import imgStreetTee from '../../assets/83e1621a2193701bd356b7e2ac630687ab76a30a.png';
-import imgStreetMug from '../../assets/7e2c294e122c805dd0314a08b2c274f546fe4828.png';
-import imgStreetTote from '../../assets/defb051e59f94d0335136ab6744d6332f1d433b4.png';
+import imgIndustrialHoodie from 'figma:asset/3b28a70b73e6cfa88d35080f20eec3643a67e593.png';
+import imgIndustrialTee from 'figma:asset/ac831d7cc86290d293cd044d7057f9e579a230b2.png';
+import imgIndustrialMug from 'figma:asset/39d76e26f03123d839fd9d69460bdf495a8ed791.png';
+import imgIndustrialLongSleeve from 'figma:asset/d178debbb18f8c5c18c1f5a07accd42507235e6c.png';
+import imgCoreHoodie from 'figma:asset/a0723a74fccaec51c528e8de1f342adf43510ce8.png';
+import imgCoreHeavyTee from 'figma:asset/9bcff617a83e9eee47e2a99c963a04b301b59602.png';
+import imgCoreCrewneck from 'figma:asset/6e7fc25e4af20175b8a7ce484c467ea28e08461a.png';
+import imgCoreCrewTee from 'figma:asset/a7addac8ece682953f7a77a390a6e36a41da3f59.png';
+import imgCoreCropTee from 'figma:asset/26540902785a9fc7a0c83d08c5b1a0ef6832fdb3.png';
+import imgStreetHoodie from 'figma:asset/f0fcab775344a238aa4305d503f78c2a131f54f9.png';
+import imgCoreMug from 'figma:asset/af320ab21ab82a206745e18e45393b2a6615227f.png';
+import imgCoreLongSleeve from 'figma:asset/a4485c9b5ad1455e27c265c337d7bf38128902ec.png';
+import imgStreetTee from 'figma:asset/83e1621a2193701bd356b7e2ac630687ab76a30a.png';
+import imgStreetMug from 'figma:asset/7e2c294e122c805dd0314a08b2c274f546fe4828.png';
+import imgStreetTote from 'figma:asset/defb051e59f94d0335136ab6744d6332f1d433b4.png';
 
 const STORE_URL = 'https://jerseyclubradio.creator-spring.com';
 
@@ -303,9 +303,9 @@ export function Merch() {
               title="TikTok"
             >
               <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" style={{ overflow: 'visible' }}>
-                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="#FF0050" transform="translate(0.6,0.6)" opacity="0.8" />
-                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="#00F2EA" transform="translate(-0.6,-0.6)" opacity="0.8" />
-                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="white" />
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="#FF0050" transform="translate(0.6,0.6)" opacity="0.8"/>
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="#00F2EA" transform="translate(-0.6,-0.6)" opacity="0.8"/>
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="white"/>
               </svg>
             </a>
 
@@ -502,7 +502,6 @@ export function Merch() {
                     <img
                       src={item.image}
                       alt={item.name}
-                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
 

@@ -143,6 +143,12 @@
   50%      { opacity: 0.5; transform: scale(0.85); }
 }
 
+/* ── Pulsing glow on album art when LIVE is active ───────────────── */
+@keyframes liveArtGlow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(157,0,255,0.4), 0 0 12px rgba(157,0,255,0.2), 0 0 24px rgba(157,0,255,0.08); }
+  50%      { box-shadow: 0 0 0 1px rgba(157,0,255,0.6), 0 0 20px rgba(157,0,255,0.4), 0 0 40px rgba(157,0,255,0.15); }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

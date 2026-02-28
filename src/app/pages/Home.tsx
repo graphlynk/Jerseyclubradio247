@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { motion } from 'motion/react';
 import { usePlayer } from '../context/PlayerContext';
 import { useCrateSafe } from '../context/CrateContext';
@@ -9,6 +9,7 @@ import { SocialWidgets } from '../components/SocialWidgets';
 import { GoldVinylRecord } from '../components/GoldVinylRecord';
 import { Play, Radio, Loader2, RefreshCw, Share, Disc3 } from 'lucide-react';
 import { formatArtistName } from '../utils/formatArtistName';
+import { formatTrackTitle } from '../utils/formatTrackTitle';
 import { ShareModal } from '../components/ShareModal';
 import { getMaxResThumbnail, handleThumbnailError } from '../utils/getMaxResThumbnail';
 import YouTubeIcon from '../../imports/YouTube';
@@ -17,6 +18,17 @@ import Instagram230 from '../../imports/Instagram-230-21';
 import svgTt from '../../imports/svg-in07bbw6xm';
 
 // ── NowPlaying ────────────────────────────────────────────────────────────────
+
+/** Strip featuring credits from a title — for compact mobile display only */
+function stripFeaturing(title: string): string {
+  // Remove "feat. X", "ft. X", "featuring X" and everything after
+  // Also handles "(feat. X)" and "[ft. X]" wrapped variants
+  let t = title;
+  t = t.replace(/\s*[\(\[]\s*(feat\.?|ft\.?|featuring)\s+[^\)\]]*[\)\]]/gi, '');
+  t = t.replace(/\s*(feat\.?|ft\.?|featuring)\s+.*/gi, '');
+  return t.replace(/[\s\-–—|,]+$/, '').trim();
+}
+
 function NowPlaying() {
   const { currentTrack, isPlaying, togglePlay, playerReady, listenerCount, totalVisitors } = usePlayer();
   const crateCtx = useCrateSafe();
@@ -90,7 +102,7 @@ function NowPlaying() {
               <img src={thumb} alt="Now Playing" className="w-full h-full object-contain" style={{ background: 'transparent' }} onError={(e) => handleThumbnailError(e, videoId)} />
             ) : (
               <div className="w-full h-full flex items-center justify-center" style={{ background: '#0F0022' }}>
-                <span className="text-6xl">🎵</span>
+                <span className="text-6xl">{'\u{1F3B5}'}</span>
               </div>
             )}
             {/* Gold shimmer overlay */}
@@ -160,7 +172,7 @@ function NowPlaying() {
                 </div>
 
                 <h1 className="text-lg md:text-3xl font-black text-white mb-0.5 leading-tight pr-2">
-                  {currentTrack ? currentTrack.snippet.title : 'Jersey Club Radio'}
+                  {currentTrack ? formatTrackTitle(currentTrack.snippet.title) : 'Jersey Club Radio'}
                 </h1>
                 <p className="font-semibold md:text-lg transition-colors duration-500" style={{ color: inCrate && is24k ? '#fcf6ba' : '#9D00FF' }}>
                   {formatArtistName(currentTrack?.snippet.channelTitle) || 'Loading tracks...'}
@@ -196,10 +208,31 @@ function NowPlaying() {
               )}
             </div>
 
-            <h1 className="text-lg font-black text-white mb-0.5 leading-tight text-center px-4 w-full truncate">
-              {currentTrack ? currentTrack.snippet.title : 'Jersey Club Radio'}
+            <h1
+              className="text-lg font-black text-white mb-0.5 leading-tight text-center w-full"
+              style={{
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                maxWidth: 'calc(100vw - 140px)',
+                margin: '0 auto',
+              }}
+            >
+              {currentTrack
+                ? stripFeaturing(formatTrackTitle(currentTrack.snippet.title, currentTrack.snippet.channelTitle))
+                : 'Jersey Club Radio'}
             </h1>
-            <p className="font-semibold mb-2 transition-colors duration-500 text-center w-full truncate" style={{ color: inCrate && is24k ? '#fcf6ba' : '#9D00FF' }}>
+            <p
+              className="font-semibold mb-2 transition-colors duration-500 text-center w-full"
+              style={{
+                color: inCrate && is24k ? '#fcf6ba' : '#9D00FF',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                maxWidth: 'calc(100vw - 140px)',
+                margin: '0 auto',
+              }}
+            >
               {formatArtistName(currentTrack?.snippet.channelTitle) || 'Loading tracks...'}
             </p>
           </div>
@@ -228,7 +261,7 @@ function NowPlaying() {
                   {!playerReady
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
                     : isPlaying
-                      ? <><span>⏸</span> Pause</>
+                      ? <><span>{'\u23F8'}</span> Pause</>
                       : <><Play className="w-4 h-4" /> Tune In</>
                   }
                 </button>
@@ -302,14 +335,8 @@ function NowPlaying() {
 export function Home() {
   const { tracks, isLoading, isRefreshing, refreshTracks, playTrack } = usePlayer();
 
-  const sortedTracks = useMemo(() => {
-    return [...tracks].sort(
-      (a, b) => new Date(b.snippet.publishedAt).getTime() - new Date(a.snippet.publishedAt).getTime(),
-    );
-  }, [tracks]);
-
   const handlePlayAll = () => {
-    if (sortedTracks[0]) playTrack(sortedTracks[0], sortedTracks);
+    if (tracks[0]) playTrack(tracks[0], tracks);
   };
 
   return (
@@ -465,25 +492,30 @@ export function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ alignItems: 'start' }}>
         {/* Playlist */}
         <div className="lg:col-span-2 flex flex-col rounded-xl" style={{ height: 'calc(100vh - 300px)', background: '#0A0716', border: '1px solid rgba(110,50,190,0.14)', borderRadius: '12px' }}>
-          <div className="flex items-center justify-between mb-2 md:mb-4 p-4 pb-0">
-            <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-              🎵 Jersey Club Playlist
-              <span
-                className="text-[10px] font-semibold text-[#E0AAFF] animate-pulse"
-                style={{ textShadow: '0 0 8px #9D00FF, 0 0 20px #9D00FF80, 0 0 40px #9D00FF40, 0 0 60px #9D00FF20' }}
-              >
-                newest first
-              </span>
-            </h2>
-            {sortedTracks.length > 0 && (
-              <button
-                onClick={handlePlayAll}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-white transition-all"
-                style={{ background: 'linear-gradient(135deg, #9D00FF, #FF0080)' }}
-              >
-                <Play className="w-3.5 h-3.5" /> Play All
-              </button>
-            )}
+          <div className="flex flex-col px-3 md:px-4 pt-3 md:pt-4 pb-1 md:pb-0 mb-2 md:mb-4">
+            {/* Row 1: Title left, Play All right */}
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2 min-w-0 flex-1">
+                
+                <span className="truncate">Jersey Club Playlist</span>
+              </h2>
+              {tracks.length > 0 && (
+                <button
+                  onClick={handlePlayAll}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-white transition-all whitespace-nowrap shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #9D00FF, #FF0080)' }}
+                >
+                  <Play className="w-3.5 h-3.5" /> Play All
+                </button>
+              )}
+            </div>
+            {/* Row 2: "newest first" aligned under the "J" in Jersey — offset = icon width (~16px) + gap-2 (8px) */}
+            <span
+              className="text-[10px] font-semibold text-[#E0AAFF] animate-pulse whitespace-nowrap leading-none mt-1 pl-[3px] pr-[0px] py-[0px]"
+              style={{ textShadow: '0 0 8px #9D00FF, 0 0 20px #9D00FF80, 0 0 40px #9D00FF40, 0 0 60px #9D00FF20' }}
+            >
+              {tracks.length} tracks &bull; curated playlist order
+            </span>
           </div>
 
           {isLoading ? (
@@ -491,9 +523,9 @@ export function Home() {
               <Loader2 className="w-10 h-10 text-[#9D00FF] animate-spin" />
               <p className="text-[#7B6F90] text-sm">Fetching Jersey Club tracks...</p>
             </div>
-          ) : sortedTracks.length === 0 ? (
+          ) : tracks.length === 0 ? (
             <div className="flex flex-col items-center gap-4 py-16 text-center">
-              <span className="text-5xl">🎵</span>
+              <span className="text-5xl">{'\u{1F3B5}'}</span>
               <p className="text-white font-bold text-lg">No tracks yet</p>
               <p className="text-[#5B4F70] text-sm">Click Refresh to load Jersey Club tracks from YouTube</p>
               <button
@@ -513,16 +545,16 @@ export function Home() {
               }}
             >
               <div className="grid grid-cols-1 gap-2 pr-1 pb-4">
-                {sortedTracks.slice(0, 20).map((track, i) => (
-                  <TrackCard key={track.id.videoId} track={track} trackList={sortedTracks} index={i} variant="list" />
+                {tracks.map((track, i) => (
+                  <TrackCard key={track.id.videoId} track={track} trackList={tracks} index={i} variant="list" />
                 ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* Most Played sidebar — match playlist height, allow scroll */}
-        <div className="lg:col-span-1" style={{ height: 'calc(100vh - 300px)', overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(140,60,255,0.22) transparent' }}>
+        {/* Most Played sidebar — match playlist height, no scroll */}
+        <div className="lg:col-span-1" style={{ height: 'calc(100vh - 300px)' }}>
           <MostPlayed />
         </div>
       </div>

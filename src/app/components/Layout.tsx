@@ -3,13 +3,14 @@ import { Link, useLocation } from 'react-router';
 import { Radio, Zap, Search, ListMusic, RefreshCw, Gamepad2, MessageCircle, Film, ShoppingBag, Disc3, FileText, DollarSign, RotateCcw, Lock as LockIcon } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useCrateSafe } from '../context/CrateContext';
-import logoImg from "../../assets/68b646f3633b265a1c7a40fc0fe58afec9893e27.png";
-import logoImgHQ from "../../assets/5ce31cfe0af844a2755b8da803c35df56f763d71.png";
+import logoImg from "figma:asset/68b646f3633b265a1c7a40fc0fe58afec9893e27.png";
+import logoImgHQ from "figma:asset/5ce31cfe0af844a2755b8da803c35df56f763d71.png";
 import { Player } from './Player';
 import { SocialTicker } from './SocialTicker';
 import { SocialWidgets } from './SocialWidgets';
 import { FlashSale } from './games/FlashSale';
 import { useSuperFan } from '../hooks/useSuperFan';
+import { useTrackSEO } from '../hooks/useTrackSEO';
 import { ConsentBanner } from './ConsentBanner';
 import { TermsPricingDrawer } from './TermsPricingDrawer';
 
@@ -31,7 +32,8 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { pathname } = useLocation();
-  const { refreshTracks, isRefreshing, tracks, isPlaying, isFetchingMore } = usePlayer();
+  const { refreshTracks, isRefreshing, tracks, isPlaying, isFetchingMore, currentTrack } = usePlayer();
+  useTrackSEO(currentTrack);
   const { showFlashSale, dismissFlashSale } = useSuperFan();
   const crateCtx = useCrateSafe();
   const is24k = crateCtx?.is24k ?? false;
@@ -272,7 +274,7 @@ export function Layout({ children }: LayoutProps) {
                       {label}
                     </Link>
                     {i < arr.length - 1 && (
-                      <span className="text-[#2B2040] text-[10px] select-none">·</span>
+                      <span className="text-[#2B2040] text-[10px] select-none">&middot;</span>
                     )}
                   </span>
                 ))}
@@ -280,7 +282,7 @@ export function Layout({ children }: LayoutProps) {
 
               {/* ── Row 4: Copyright ── */}
               <p className="text-[10px] font-mono text-[#2B2040] text-center">
-                Copyright 2026 Jersey Club Radio 24/7 &nbsp;·&nbsp; Payments secured by{' '}
+                Copyright 2026 Jersey Club Radio 24/7 &nbsp;&middot;&nbsp; Payments secured by{' '}
                 <a href="https://paddle.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#C084FC] transition-colors">
                   Paddle
                 </a>

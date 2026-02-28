@@ -14,16 +14,8 @@ interface TrackCardProps {
   variant?: 'grid' | 'list';
 }
 
-function formatDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch {
-    return '';
-  }
-}
-
 function truncate(str: string, max: number) {
-  return str.length > max ? str.slice(0, max) + '…' : str;
+  return str.length > max ? str.slice(0, max) + '\u2026' : str;
 }
 
 export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCardProps) {
@@ -80,7 +72,7 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
       >
         {index !== undefined && (
           <span className={`text-sm w-5 text-center font-mono ${isActive ? 'text-[#9D00FF]' : 'text-[#3A3A4A]'}`}>
-            {isActive && isPlaying ? '▶' : index + 1}
+            {isActive && isPlaying ? '\u25B6' : index + 1}
           </span>
         )}
         <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ background: '#0F0022' }}>
@@ -96,14 +88,11 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold truncate ${isActive ? 'text-[#9D00FF]' : 'text-[#E0D8F0]'}`}>
-            {truncate(formatTrackTitle(track.snippet.title, track.snippet.channelTitle), 60)}
+          <p className={`text-sm font-semibold truncate max-w-[calc(100vw-190px)] md:max-w-none ${isActive ? 'text-[#9D00FF]' : 'text-[#E0D8F0]'}`}>
+            {formatTrackTitle(track.snippet.title, track.snippet.channelTitle)}
           </p>
-          <p className="text-xs text-[#5A3878] truncate">{formatArtistName(track.snippet.channelTitle)}</p>
+          <p className="text-xs text-[#5A3878] truncate max-w-[calc(100vw-190px)] md:max-w-none">{formatArtistName(track.snippet.channelTitle)}</p>
         </div>
-        <span className="text-xs text-[#3A3A4A] hidden sm:block flex-shrink-0">
-          {formatDate(track.snippet.publishedAt)}
-        </span>
         {/* Crate button (list) */}
         <button
           onClick={handleCrate}
