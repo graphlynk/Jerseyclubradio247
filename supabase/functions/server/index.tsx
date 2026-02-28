@@ -17,6 +17,10 @@ const supabaseAdmin = createClient(
 const OG_BUCKET = "make-715f71b9-social";
 const OG_FILE   = "og-image.png";
 
+// ── Admin key for event approval/deletion (must be set via env) ──────────────
+const ADMIN_KEY = Deno.env.get("ADMIN_KEY") || "";
+if (!ADMIN_KEY) console.warn("[SECURITY] ADMIN_KEY env var not set — admin endpoints will reject all requests until configured");
+
 // Idempotently create the social-assets storage bucket on cold start
 (async () => {
   try {
@@ -1059,8 +1063,8 @@ app.post("/make-server-715f71b9/events/:id/approve", async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
-    // Simple admin password check
-    if (body.adminKey !== 'JC247ADMIN') return c.json({ error: 'Unauthorized' }, 401);
+    // Admin key check — rejects if ADMIN_KEY env var is unset
+    if (!ADMIN_KEY || body.adminKey !== ADMIN_KEY) return c.json({ error: 'Unauthorized' }, 401);
     const all = await getFlyers();
     const updated = all.map((f: Flyer) => f.id === id ? { ...f, approved: true, featured: !!body.featured } : f);
     await kv.set(EVENTS_KV_KEY, updated);
@@ -1075,7 +1079,7 @@ app.delete("/make-server-715f71b9/events/:id", async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json().catch(() => ({}));
-    if (body.adminKey !== 'JC247ADMIN') return c.json({ error: 'Unauthorized' }, 401);
+    if (!ADMIN_KEY || body.adminKey !== ADMIN_KEY) return c.json({ error: 'Unauthorized' }, 401);
     const all = await getFlyers();
     await kv.set(EVENTS_KV_KEY, all.filter((f: Flyer) => f.id !== id));
     return c.json({ success: true });
