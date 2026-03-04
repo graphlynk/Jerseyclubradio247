@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(supabase --version)",
+      "Bash(npx supabase --version)",
+      "Bash(ANON=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6c3V4bnRld2dkZXJkaHpkYmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NTE0NzIsImV4cCI6MjA4NzAyNzQ3Mn0.Bye-I1mHF3cOFgrm5s63hGrmTRZcjGNOXOy1gxxWNuY\")",
+      "Bash(BASE=\"https://jzsuxntewgderdhzdbeh.supabase.co/functions/v1/make-server-715f71b9\")",
+      "Bash(node -e \":*)"
+    ]
+  }
+}
