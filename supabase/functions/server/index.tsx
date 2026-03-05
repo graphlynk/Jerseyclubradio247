@@ -4180,4 +4180,162 @@ app.put("/make-server-715f71b9/top-songs", async (c: any) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ARTIST PROFILES
+//  Talent profiles with photos, bios, social links, and badge system
+//  Managed via admin panel, publicly viewable on /artists
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ARTIST_PHOTOS_BUCKET = "jc-artist-photos";
+
+// Ensure artist photos bucket exists (cold start)
+(async () => {
+  try {
+    const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+    const names = buckets?.map((b: any) => b.name) ?? [];
+    if (!names.includes(ARTIST_PHOTOS_BUCKET)) {
+      await supabaseAdmin.storage.createBucket(ARTIST_PHOTOS_BUCKET, { public: true });
+      console.log(`[Artists] Created storage bucket "${ARTIST_PHOTOS_BUCKET}"`);
+    }
+  } catch (e) {
+    console.log("[Artists] Bucket init (non-critical):", e);
+  }
+})();
+
+// GET /artists — public read of all visible artist profiles
+app.get("/make-server-715f71b9/artists", async (c: any) => {
+  try {
+    const artists = ((await kv.get('jc_artists_v1')) as any[]) || [];
+    // Only return visible artists to the public, sorted by order
+    const visible = artists
+      .filter((a: any) => a.visible !== false)
+      .sort((a: any, b: any) => (a.order ?? 999) - (b.order ?? 999));
+    return c.json(visible);
+  } catch (e) {
+    console.log("[Artists] get error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// GET /artists/:slug — public read of single artist + matched tracks
+app.get("/make-server-715f71b9/artists/:slug", async (c: any) => {
+  try {
+    const slug = c.req.param('slug');
+    const artists = ((await kv.get('jc_artists_v1')) as any[]) || [];
+    const artist = artists.find((a: any) => a.slug === slug && a.visible !== false);
+    if (!artist) return c.json({ error: 'Artist not found' }, 404);
+
+    // Find tracks that match this artist's trackMatches array
+    const allTracks = ((await kv.get("jc_tracks_v2")) as any[]) || [];
+    const coverArtMap = ((await kv.get('jc_cover_art_v1')) as Record<string, string>) || {};
+    const matchNames = (artist.trackMatches || []).map((n: string) => n.toLowerCase());
+
+    const matchedTracks = allTracks
+      .filter((t: any) => {
+        const channel = (t.snippet?.channelTitle || '').toLowerCase();
+        const title = (t.snippet?.title || '').toLowerCase();
+        return matchNames.some((m: string) => channel.includes(m) || title.includes(m));
+      })
+      .slice(0, 30)
+      .map((t: any) => {
+        const videoId = t.id?.videoId || t.videoId || '';
+        return {
+          videoId,
+          title: t.snippet?.title || 'Unknown',
+          channelTitle: t.snippet?.channelTitle || '',
+          thumbnail: t.snippet?.thumbnails?.default?.url || '',
+          source: t.source || 'youtube',
+          soundcloudUrl: t.soundcloudUrl,
+          coverArtUrl: coverArtMap[videoId] || t.coverArtUrl || null,
+        };
+      });
+
+    return c.json({ ...artist, tracks: matchedTracks });
+  } catch (e) {
+    console.log("[Artists] get single error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// PUT /artists — admin-only, save full artist roster
+app.put("/make-server-715f71b9/artists", async (c: any) => {
+  const auth = await requireAdmin(c);
+  if (auth instanceof Response) return auth;
+  try {
+    const artists = await c.req.json();
+    if (!Array.isArray(artists)) return c.json({ error: 'Expected array of artist profiles' }, 400);
+    // Assign order based on array position, add updatedAt
+    const ordered = artists.map((a: any, i: number) => ({
+      ...a,
+      order: i,
+      updatedAt: new Date().toISOString(),
+    }));
+    await kv.set('jc_artists_v1', ordered);
+    console.log(`[Artists] ${(auth as any).userId} saved ${ordered.length} artist profiles`);
+    return c.json({ success: true });
+  } catch (e) {
+    console.log("[Artists] save error:", e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// POST /admin/artist-photo/:slug — upload artist profile photo
+app.post("/make-server-715f71b9/admin/artist-photo/:slug", async (c: any) => {
+  const auth = await requireAdmin(c);
+  if (auth instanceof Response) return auth;
+
+  const slug = c.req.param('slug');
+  const contentType = c.req.header('Content-Type') || '';
+
+  try {
+    let file: Blob | File;
+    let mime: string;
+
+    if (contentType.startsWith('image/')) {
+      file = await c.req.blob();
+      mime = contentType;
+    } else if (contentType.includes('multipart')) {
+      const formData = await c.req.formData();
+      const uploaded = formData.get('image') || formData.get('file');
+      if (!uploaded || !(uploaded instanceof File)) {
+        return c.json({ error: 'Include "image" or "file" field in form data' }, 400);
+      }
+      file = uploaded;
+      mime = uploaded.type || 'image/png';
+    } else {
+      return c.json({ error: 'Send image/* binary or multipart/form-data' }, 400);
+    }
+
+    const ext = mime.includes('jpeg') || mime.includes('jpg') ? 'jpg'
+      : mime.includes('webp') ? 'webp' : 'png';
+    const fileName = `${slug}.${ext}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(ARTIST_PHOTOS_BUCKET)
+      .upload(fileName, file, { contentType: mime, upsert: true });
+
+    if (uploadError) {
+      console.log('[ArtistPhoto] Upload error:', uploadError);
+      return c.json({ error: `Upload failed: ${uploadError.message}` }, 500);
+    }
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from(ARTIST_PHOTOS_BUCKET)
+      .getPublicUrl(fileName);
+
+    // Update the artist's photoUrl in the KV roster
+    const artists = ((await kv.get('jc_artists_v1')) as any[]) || [];
+    const updated = artists.map((a: any) =>
+      a.slug === slug ? { ...a, photoUrl: publicUrl, updatedAt: new Date().toISOString() } : a
+    );
+    await kv.set('jc_artists_v1', updated);
+
+    console.log(`[ArtistPhoto] ${(auth as any).userId} uploaded photo for ${slug} → ${publicUrl}`);
+    return c.json({ success: true, url: publicUrl });
+  } catch (e) {
+    console.log('[ArtistPhoto] Error:', e);
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

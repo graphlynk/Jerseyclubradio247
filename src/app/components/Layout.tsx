@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
-import { Radio, Zap, Search, ListMusic, RefreshCw, Gamepad2, MessageCircle, Film, ShoppingBag, Disc3, FileText, DollarSign, RotateCcw, Lock as LockIcon } from 'lucide-react';
+import { Radio, Zap, Search, ListMusic, RefreshCw, Gamepad2, MessageCircle, Film, ShoppingBag, Disc3, FileText, DollarSign, RotateCcw, Lock as LockIcon, Info, Users } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useCrateSafe } from '../context/CrateContext';
 import { Player } from './Player';
@@ -19,9 +19,11 @@ const NAV = [
   { path: '/queue', icon: ListMusic, label: 'Queue' },
   { path: '/crate', icon: Disc3, label: 'My Crate' },
   { path: '/chat', icon: MessageCircle, label: 'Chat' },
+  { path: '/artists', icon: Users, label: 'Artists' },
   { path: '/dance-videos', icon: Film, label: 'Dance Videos' },
   { path: '/merch', icon: ShoppingBag, label: 'Merch' },
   { path: '/games', icon: Gamepad2, label: 'Game Hub' },
+  { path: '/about', icon: Info, label: 'About' },
 ];
 
 interface LayoutProps {
@@ -67,8 +69,8 @@ export function Layout({ children }: LayoutProps) {
       <div className="flex flex-1 pb-[200px] md:pb-24 relative z-10">
         {/* Sidebar */}
         <aside
-          className="hidden md:flex flex-col w-60 border-r border-[#1a0040] flex-shrink-0 sticky top-0 overflow-y-auto"
-          style={{ background: 'linear-gradient(180deg, rgba(10,0,24,0.95) 0%, rgba(6,0,15,0.95) 100%)', backdropFilter: 'blur(10px)', height: 'calc(100vh - 72px)' }}
+          className="hidden md:flex flex-col w-60 border-r border-[#1a0040] flex-shrink-0 fixed top-0 left-0 bottom-0 z-40 overflow-y-auto"
+          style={{ background: 'linear-gradient(180deg, rgba(10,0,24,0.95) 0%, rgba(6,0,15,0.95) 100%)', backdropFilter: 'blur(10px)' }}
         >
           {/* Logo */}
           <div className="p-5 border-b border-[#1a0040]">
@@ -158,7 +160,7 @@ export function Layout({ children }: LayoutProps) {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto md:ml-60">
           {children}
 
           {/* Legal footer — visible on every page for Paddle domain review */}

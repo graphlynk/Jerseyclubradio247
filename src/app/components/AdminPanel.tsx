@@ -11,6 +11,7 @@ import { formatArtistName } from '../utils/formatArtistName';
 import { formatTrackTitle } from '../utils/formatTrackTitle';
 import type { TopSongPick } from './MostPlayed';
 import { WorldHeatMap, type MapDot } from './WorldHeatMap';
+import { AdminArtistsPanel } from './AdminArtistsPanel';
 
 const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-715f71b9`;
 const supabase = createClient(`https://${projectId}.supabase.co`, publicAnonKey);
@@ -689,7 +690,7 @@ function AnalyticsPanel() {
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 function AdminDashboard({ adminToken, onLogout }: { adminToken: string; onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<'songs' | 'analytics'>('songs');
+  const [activeTab, setActiveTab] = useState<'songs' | 'analytics' | 'artists'>('songs');
   const [playlist, setPlaylist] = useState<AdminTrack[]>([]);
   const [picks, setPicks] = useState<TopSongPick[]>([]);
   const [search, setSearch] = useState('');
@@ -853,9 +854,9 @@ function AdminDashboard({ adminToken, onLogout }: { adminToken: string; onLogout
 
   const filteredPlaylist = search.trim()
     ? playlist.filter(t =>
-        t.title.toLowerCase().includes(search.toLowerCase()) ||
-        t.channelTitle.toLowerCase().includes(search.toLowerCase())
-      )
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      t.channelTitle.toLowerCase().includes(search.toLowerCase())
+    )
     : playlist;
 
   return (
@@ -893,6 +894,17 @@ function AdminDashboard({ adminToken, onLogout }: { adminToken: string; onLogout
               <Globe className="w-3 h-3" />
               Analytics
             </button>
+            <button
+              onClick={() => setActiveTab('artists')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all"
+              style={{
+                background: activeTab === 'artists' ? 'rgba(0,255,136,0.12)' : 'transparent',
+                color: activeTab === 'artists' ? '#00FF88' : '#5B4F70',
+                boxShadow: activeTab === 'artists' ? '0 0 10px rgba(0,255,136,0.15)' : 'none',
+              }}
+            >
+              Artists
+            </button>
           </div>
 
           {/* Save status (songs tab only) */}
@@ -907,15 +919,15 @@ function AdminDashboard({ adminToken, onLogout }: { adminToken: string; onLogout
                 style={{
                   background: saveStatus === 'saving' ? 'rgba(140,50,255,0.2)'
                     : saveStatus === 'saved' ? 'rgba(0,255,136,0.15)'
-                    : 'rgba(255,34,119,0.15)',
+                      : 'rgba(255,34,119,0.15)',
                   color: saveStatus === 'saving' ? '#9D7FFF'
                     : saveStatus === 'saved' ? '#00FF88'
-                    : '#FF2277',
+                      : '#FF2277',
                 }}
               >
                 {saveStatus === 'saving' ? 'Saving…'
                   : saveStatus === 'saved' ? 'Saved ✓'
-                  : 'Error saving'}
+                    : 'Error saving'}
               </motion.span>
             )}
           </AnimatePresence>
@@ -944,6 +956,21 @@ function AdminDashboard({ adminToken, onLogout }: { adminToken: string; onLogout
         )}
       </AnimatePresence>
 
+      {/* ── Artists tab ──────────────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'artists' && (
+          <motion.div
+            key="artists"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <AdminArtistsPanel adminToken={adminToken} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Top Songs tab ──────────────────────────────────────────────────── */}
       {activeTab === 'songs' && (loadingTracks ? (
         <div className="flex items-center justify-center h-64">
@@ -956,88 +983,88 @@ function AdminDashboard({ adminToken, onLogout }: { adminToken: string; onLogout
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-        <DndProvider backend={HTML5Backend}>
-          <div className="grid grid-cols-2 gap-6">
-            {/* ── Left column: Jersey Club Playlist ────────────────────── */}
-            <div
-              className="rounded-2xl p-4 flex flex-col gap-3"
-              style={{ background: '#0A0716', border: '1px solid rgba(110,50,190,0.18)' }}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-black text-[#9D7FFF] tracking-widest uppercase">
-                  Jersey Club Playlist
-                </h2>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-[#3B2F50]">{playlist.length} tracks</span>
-                  <button
-                    onClick={refreshPlaylist}
-                    disabled={refreshing}
-                    title="Refresh playlist from SoundCloud"
-                    className="flex items-center gap-1 text-[9px] text-[#9D7FFF] hover:text-white transition-colors disabled:opacity-40"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
-                    {refreshing ? 'Refreshing…' : 'Refresh'}
-                  </button>
+          <DndProvider backend={HTML5Backend}>
+            <div className="grid grid-cols-2 gap-6">
+              {/* ── Left column: Jersey Club Playlist ────────────────────── */}
+              <div
+                className="rounded-2xl p-4 flex flex-col gap-3"
+                style={{ background: '#0A0716', border: '1px solid rgba(110,50,190,0.18)' }}
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-black text-[#9D7FFF] tracking-widest uppercase">
+                    Jersey Club Playlist
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-[#3B2F50]">{playlist.length} tracks</span>
+                    <button
+                      onClick={refreshPlaylist}
+                      disabled={refreshing}
+                      title="Refresh playlist from SoundCloud"
+                      className="flex items-center gap-1 text-[9px] text-[#9D7FFF] hover:text-white transition-colors disabled:opacity-40"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                      {refreshing ? 'Refreshing…' : 'Refresh'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#3B2F50]" />
+                  <input
+                    type="text"
+                    placeholder="Filter tracks…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 rounded-lg text-xs text-white placeholder-[#3B2F50] outline-none"
+                    style={{ background: '#08001A', border: '1px solid rgba(80,30,140,0.25)' }}
+                  />
+                </div>
+
+                {/* Track list */}
+                <div className="flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+                  {filteredPlaylist.map(track => (
+                    <DraggableTrack
+                      key={track.videoId}
+                      track={track}
+                      alreadyAdded={addedIds.has(track.videoId)}
+                      uploadingCoverArt={uploadingIds.has(track.videoId)}
+                      onUploadCoverArt={uploadCoverArt}
+                    />
+                  ))}
+                  {filteredPlaylist.length === 0 && (
+                    <p className="text-[10px] text-[#3B2F50] text-center py-4">No tracks found</p>
+                  )}
                 </div>
               </div>
 
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#3B2F50]" />
-                <input
-                  type="text"
-                  placeholder="Filter tracks…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-7 pr-3 py-2 rounded-lg text-xs text-white placeholder-[#3B2F50] outline-none"
-                  style={{ background: '#08001A', border: '1px solid rgba(80,30,140,0.25)' }}
-                />
-              </div>
+              {/* ── Right column: Top Songs Picks ────────────────────────── */}
+              <div
+                className="rounded-2xl p-4 flex flex-col gap-3"
+                style={{ background: '#0A0716', border: '1px solid rgba(255,215,0,0.12)' }}
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-black text-[#FFD700] tracking-widest uppercase">
+                    Top Songs Picks
+                  </h2>
+                  <span className="text-[9px] text-[#3B2F50]">{picks.length} picks</span>
+                </div>
 
-              {/* Track list */}
-              <div className="flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
-                {filteredPlaylist.map(track => (
-                  <DraggableTrack
-                    key={track.videoId}
-                    track={track}
-                    alreadyAdded={addedIds.has(track.videoId)}
-                    uploadingCoverArt={uploadingIds.has(track.videoId)}
-                    onUploadCoverArt={uploadCoverArt}
+                <p className="text-[9px] text-[#3B2F50]">
+                  Drag from playlist to add · Drag rows to reorder · Click ✕ to remove
+                </p>
+
+                <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+                  <PicksDropZone
+                    picks={picks}
+                    onAdd={addTrack}
+                    onRemove={removeTrack}
+                    onReorder={reorderPicks}
                   />
-                ))}
-                {filteredPlaylist.length === 0 && (
-                  <p className="text-[10px] text-[#3B2F50] text-center py-4">No tracks found</p>
-                )}
+                </div>
               </div>
             </div>
-
-            {/* ── Right column: Top Songs Picks ────────────────────────── */}
-            <div
-              className="rounded-2xl p-4 flex flex-col gap-3"
-              style={{ background: '#0A0716', border: '1px solid rgba(255,215,0,0.12)' }}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-black text-[#FFD700] tracking-widest uppercase">
-                  Top Songs Picks
-                </h2>
-                <span className="text-[9px] text-[#3B2F50]">{picks.length} picks</span>
-              </div>
-
-              <p className="text-[9px] text-[#3B2F50]">
-                Drag from playlist to add · Drag rows to reorder · Click ✕ to remove
-              </p>
-
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
-                <PicksDropZone
-                  picks={picks}
-                  onAdd={addTrack}
-                  onRemove={removeTrack}
-                  onReorder={reorderPicks}
-                />
-              </div>
-            </div>
-          </div>
-        </DndProvider>
+          </DndProvider>
         </motion.div>
       ))}
     </div>

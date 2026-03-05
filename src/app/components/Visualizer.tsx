@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface VisualizerProps {
   isPlaying: boolean;
@@ -14,7 +14,7 @@ interface VisualizerProps {
  * Premium waveform visualizer — mono-purple bars with edge fade,
  * designed to stretch across the desktop player and blend seamlessly.
  */
-export function Visualizer({
+export const Visualizer = React.memo(function Visualizer({
   isPlaying,
   barCount = 48,
   height = 60,
@@ -89,4 +89,4 @@ export function Visualizer({
       ))}
     </div>
   );
-}
+});

@@ -17,7 +17,7 @@ interface TrackBrowserProps {
 const POLL_INTERVAL = 60_000; // check for new tracks every 60s
 const TOOLTIP_KEY = 'jcr_vinyl_tooltip_shown';
 
-export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
+export const TrackBrowser = React.memo(function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
   const {
     tracks, currentTrack, playTrack, isLoading, isFetchingMore,
     refreshTracks, isRefreshing,
@@ -353,7 +353,7 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
                           >
                             {title}
                           </p>
-                          <p className="text-[11px] font-medium truncate mt-0.5" style={{ color: '#b8b0cc' }}>
+                          <p className="text-[11px] text-[#9d96b8] font-medium truncate mt-0.5">
                             {artist}
                           </p>
                         </div>
@@ -425,4 +425,4 @@ export function TrackBrowser({ isOpen, onClose }: TrackBrowserProps) {
       )}
     </AnimatePresence>
   );
-}
+});

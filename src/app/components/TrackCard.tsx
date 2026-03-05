@@ -18,7 +18,7 @@ function truncate(str: string, max: number) {
   return str.length > max ? str.slice(0, max) + '\u2026' : str;
 }
 
-export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCardProps) {
+export const TrackCard = React.memo(function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCardProps) {
   const { currentTrack, isPlaying, playTrack, togglePlay } = usePlayer();
   const crateCtx = useCrateSafe();
   const addToCrate = crateCtx?.addToCrate;
@@ -163,4 +163,4 @@ export function TrackCard({ track, trackList, index, variant = 'grid' }: TrackCa
       </div>
     </div>
   );
-}
+});

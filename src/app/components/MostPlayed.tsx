@@ -220,7 +220,7 @@ interface ListenerData {
 }
 
 // ─── Global Reach tab — just the animated world map ──────────────────────────
-function GlobalReachTab({
+const GlobalReachTab = React.memo(function GlobalReachTab({
   listenerData,
   visitorMap,
 }: {
@@ -244,10 +244,10 @@ function GlobalReachTab({
       <WorldHeatMap visitors={visitorMap} active={activeDots} showMetrics={false} />
     </motion.div>
   );
-}
+});
 
 // ─── Top Songs tab — editorial picks list ─────────────────────────────────────
-function TopSongsTab({
+const TopSongsTab = React.memo(function TopSongsTab({
   topSongs,
   onPlay,
 }: {
@@ -312,7 +312,7 @@ function TopSongsTab({
       ))}
     </div>
   );
-}
+});
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function MostPlayed() {
@@ -474,7 +474,11 @@ export function MostPlayed() {
         </button>
         <button
           onClick={() => setTab('map')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold transition-all ${tab === 'map' ? 'text-[#00FF88]' : 'text-[#4A3460] hover:text-white'
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold transition-all ${tab === 'map'
+            ? 'text-[#00FF88]'
+            : listenerData && listenerData.totalActive > 0
+              ? 'text-[#00FF88]'
+              : 'text-[#4A3460] hover:text-white'
             }`}
           style={
             tab === 'map'
@@ -484,14 +488,8 @@ export function MostPlayed() {
         >
           <Globe className="w-3.5 h-3.5" />
           GLOBAL REACH
-          {listenerData && listenerData.totalActive > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-[#00FF88] text-black">
-              {listenerData.totalActive}
-            </span>
-          )}
         </button>
       </div>
-
       {/* Content */}
       <div className="p-4 flex-1 flex flex-col overflow-y-auto">
         {loading ? (

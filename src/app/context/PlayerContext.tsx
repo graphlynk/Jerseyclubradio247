@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 // @refresh reset
+import { useLocation } from 'react-router';
 import { projectId, publicAnonKey } from '../../../utils/supabase/info';
 import { toast } from 'sonner';
 import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
@@ -198,6 +199,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [listenerCount, setListenerCount] = useState(1);
   const [totalVisitors, setTotalVisitors] = useState(0);
 
+  const location = useLocation();
+
   // ─── Radio sync refs ────────────────────────────────────────────────────
   const radioModeRef = useRef(false);
   const lastDurationReportRef = useRef<string>(''); // videoId of last reported duration
@@ -331,7 +334,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const mode = deck === 'A' ? deckModeA.current : deckModeB.current;
     if (mode === 'native') {
       const audio = deck === 'A' ? scAudioA.current : scAudioB.current;
-      const gain  = deck === 'A' ? deckGainA.current : deckGainB.current;
+      const gain = deck === 'A' ? deckGainA.current : deckGainB.current;
       try { audio?.pause(); if (audio) audio.currentTime = 0; } catch { }
       if (gain) gain.gain.value = 0;
     } else {
@@ -375,14 +378,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       try { getYtPlayer(deck)?.pauseVideo(); } catch { }
 
       const deckMode = deck === 'A' ? deckModeA : deckModeB;
-      const audio    = deck === 'A' ? scAudioA.current : scAudioB.current;
-      const gain     = deck === 'A' ? deckGainA.current : deckGainB.current;
+      const audio = deck === 'A' ? scAudioA.current : scAudioB.current;
+      const gain = deck === 'A' ? deckGainA.current : deckGainB.current;
 
       // ── Primary: native <audio> + Web Audio API normalization ──────────
       if (audio && gain && audioCtxRef.current) {
-        deckMode.current  = 'native';
-        gain.gain.value   = 0;
-        const numericId   = track.id.videoId.replace('sc_', '');
+        deckMode.current = 'native';
+        gain.gain.value = 0;
+        const numericId = track.id.videoId.replace('sc_', '');
 
         fetch(`${BASE}/sc-stream?id=${numericId}`, { headers: HEADERS })
           .then(r => r.json())
@@ -815,17 +818,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const audioCtx = new AudioContext();
     const compressor = audioCtx.createDynamicsCompressor();
     compressor.threshold.value = -24;   // compress peaks above -24 dBFS
-    compressor.knee.value      = 8;     // smooth musical onset
-    compressor.ratio.value     = 4;     // 4:1 — transparent but effective
-    compressor.attack.value    = 0.005; // 5 ms — catches loud transients
-    compressor.release.value   = 0.25;  // 250 ms — no pumping between beats
+    compressor.knee.value = 8;     // smooth musical onset
+    compressor.ratio.value = 4;     // 4:1 — transparent but effective
+    compressor.attack.value = 0.005; // 5 ms — catches loud transients
+    compressor.release.value = 0.25;  // 250 ms — no pumping between beats
     // Makeup gain: boosts the compressed signal so tracks play louder overall
     // while still being normalized to each other. ~+5 dB (1.8× linear).
     const makeupGain = audioCtx.createGain();
     makeupGain.gain.value = 1.8;
     compressor.connect(makeupGain);
     makeupGain.connect(audioCtx.destination);
-    audioCtxRef.current   = audioCtx;
+    audioCtxRef.current = audioCtx;
     compressorRef.current = compressor;
     makeupGainRef.current = makeupGain;
 
@@ -841,7 +844,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
       audio.addEventListener('play', () => {
         if (destroyed) return;
-        const isActive   = activeDeckRef.current === deck;
+        const isActive = activeDeckRef.current === deck;
         const isIncoming = isCrossfadingRef.current && incomingDeckRef.current === deck;
         if (isActive || isIncoming) { setIsPlaying(true); isPlayingRef.current = true; }
       });
@@ -896,16 +899,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const initWidget = (iframe: HTMLIFrameElement, deck: DeckId) => {
         const widget = window.SC.Widget(iframe);
         const widgetRef = deck === 'A' ? scWidgetA : scWidgetB;
-        const readyRef  = deck === 'A' ? scReadyA  : scReadyB;
+        const readyRef = deck === 'A' ? scReadyA : scReadyB;
         widgetRef.current = widget;
-        readyRef.current  = true;
+        readyRef.current = true;
 
         // Widget fallback events — only fire when deckMode is 'widget'
         widget.bind(window.SC.Widget.Events.PLAY, () => {
           if (destroyed) return;
           const mode = deck === 'A' ? deckModeA.current : deckModeB.current;
           if (mode !== 'widget') return;
-          const isActive   = activeDeckRef.current === deck;
+          const isActive = activeDeckRef.current === deck;
           const isIncoming = isCrossfadingRef.current && incomingDeckRef.current === deck;
           if (isActive || isIncoming) { setIsPlaying(true); isPlayingRef.current = true; }
         });
@@ -945,7 +948,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       destroyed = true;
-      audioCtx.close().catch(() => {});
+      audioCtx.close().catch(() => { });
       try { iframeA.remove(); } catch { }
       try { iframeB.remove(); } catch { }
       try { script.remove(); } catch { }
@@ -1027,7 +1030,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           const inactiveMode = inactive === 'A' ? deckModeA.current : deckModeB.current;
           if (inactiveMode === 'native') {
             const inactiveAudio = inactive === 'A' ? scAudioA.current : scAudioB.current;
-            const inactiveGain  = inactive === 'A' ? deckGainA.current : deckGainB.current;
+            const inactiveGain = inactive === 'A' ? deckGainA.current : deckGainB.current;
             if (inactiveAudio && !inactiveAudio.paused) {
               console.warn(`[DJ] SAFETY: Inactive SC Deck ${inactive} still playing! Force-stopping.`);
               try { inactiveAudio.pause(); } catch { }
@@ -1040,13 +1043,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // ── Crossfade trigger check (only when NOT already crossfading) ──────
       if (!isCrossfadingRef.current) {
         let activeProg = 0;
-        let activeDur  = 0;
+        let activeDur = 0;
 
         if (engine === 'youtube') {
           const yt = getYtPlayer(active);
           if (yt?.getCurrentTime) {
             activeProg = yt.getCurrentTime();
-            activeDur  = yt.getDuration?.() || 0;
+            activeDur = yt.getDuration?.() || 0;
           }
         } else {
           // SoundCloud crossfade trigger
@@ -1056,7 +1059,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             const audio = active === 'A' ? scAudioA.current : scAudioB.current;
             if (audio) {
               activeProg = audio.currentTime;
-              activeDur  = audio.duration || durationRef.current;
+              activeDur = audio.duration || durationRef.current;
             }
           } else {
             // Widget — async callback
@@ -1065,7 +1068,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
               try {
                 sc.getPosition((pos: number) => {
                   const posSec = pos / 1000;
-                  const dur    = durationRef.current;
+                  const dur = durationRef.current;
                   if (dur > MIN_TRACK_FOR_XFADE && dur > 0 && (dur - posSec) <= CROSSFADE_TOTAL && (dur - posSec) > 0.5) {
                     if (!isCrossfadingRef.current) {
                       console.log(`[DJ] SC Widget crossfade trigger: ${posSec.toFixed(1)}s / ${dur.toFixed(1)}s`);
@@ -1220,7 +1223,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           const mode = active === 'A' ? deckModeA.current : deckModeB.current;
           if (mode === 'native') {
             const audio = active === 'A' ? scAudioA.current : scAudioB.current;
-            const gain  = active === 'A' ? deckGainA.current : deckGainB.current;
+            const gain = active === 'A' ? deckGainA.current : deckGainB.current;
             if (audio) {
               audio.play().catch(e => console.warn('[SC Native] resume error:', e));
               if (gain) gain.gain.value = masterVolumeRef.current / 100;
@@ -1344,6 +1347,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   /** Internal: start a track at a given position WITHOUT exiting radio mode */
   const startTrackInRadioMode = useCallback((track: Track, idx: number, seekSec: number) => {
+    // DO NOT play if on the admin panel
+    if (location.pathname.startsWith('/admin')) return;
+
     cancelCrossfade();
 
     playlistRef.current.forEach(t => seenIdsRef.current.add(t.id.videoId));
@@ -1375,10 +1381,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setProgress(seekSec);
       }, 2000);
     }
-  }, [cancelCrossfade, loadOnDeck, stopDeck]);
+  }, [cancelCrossfade, loadOnDeck, stopDeck, location.pathname]);
 
   const autoStartedRef = useRef(false);
+
+  // Pause playback automatically when entering admin
   useEffect(() => {
+    if (location.pathname.startsWith('/admin') && isPlaying) {
+      togglePlay();
+    }
+  }, [location.pathname, isPlaying, togglePlay]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin')) return;
     if (autoStartedRef.current || !playerReady || !tracks.length) return;
     autoStartedRef.current = true;
 

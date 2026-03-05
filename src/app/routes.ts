@@ -21,7 +21,10 @@ const TermsOfService = lazy(() => import('./pages/TermsOfService').then(m => ({ 
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const Pricing = lazy(() => import('./pages/Pricing').then(m => ({ default: m.Pricing })));
 const RefundPolicy = lazy(() => import('./pages/RefundPolicy').then(m => ({ default: m.RefundPolicy })));
+const About = lazy(() => import('./pages/About').then(m => ({ default: m.About })));
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
+const Artists = lazy(() => import('./pages/Artists').then(m => ({ default: m.Artists })));
+const ArtistDetail = lazy(() => import('./pages/ArtistDetail').then(m => ({ default: m.ArtistDetail })));
 
 export const router = createBrowserRouter([
   {
@@ -46,6 +49,8 @@ export const router = createBrowserRouter([
           { path: 'games/beat-maker', Component: BeatMaker },
           { path: 'games/chess', Component: Chess },
           { path: 'games/checkers', Component: Checkers },
+          { path: 'artists', Component: Artists },
+          { path: 'artists/:slug', Component: ArtistDetail },
         ],
       },
       // Legal pages — standalone layout (no sidebar/player chrome)
@@ -53,6 +58,7 @@ export const router = createBrowserRouter([
       { path: 'privacy', Component: PrivacyPolicy },
       { path: 'pricing', Component: Pricing },
       { path: 'refund-policy', Component: RefundPolicy },
+      { path: 'about', Component: About },
       { path: 'admin', Component: Admin },
     ],
   },

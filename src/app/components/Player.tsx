@@ -24,6 +24,99 @@ function truncate(str: string, max: number) {
   return str.length > max ? str.slice(0, max) + '\u2026' : str;
 }
 
+const DesktopProgressBar = React.memo(function DesktopProgressBar({ inCrate, is24k }: { inCrate: boolean; is24k: boolean }) {
+  const { progress, duration } = usePlayerProgress();
+  const { seekTo } = usePlayer();
+  const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
+
+  return (
+    <div
+      className="relative h-1 w-full cursor-pointer group md:block hidden"
+      style={{ background: '#1a003a' }}
+      onClick={e => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        seekTo(ratio * duration);
+      }}
+    >
+      <div
+        className="h-full relative"
+        style={{
+          width: `${progressPct}%`,
+          background: inCrate && is24k
+            ? 'linear-gradient(to right, #bf953f, #fcf6ba)'
+            : 'linear-gradient(to right, #9D00FF, #FF0080)',
+          transition: 'background 0.8s ease',
+        }}
+      >
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </div>
+  );
+});
+
+const MobileProgressBar = React.memo(function MobileProgressBar({ inCrate, is24k }: { inCrate: boolean; is24k: boolean }) {
+  const { progress, duration } = usePlayerProgress();
+  const { seekTo } = usePlayer();
+  const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
+
+  return (
+    <div className="px-3 pb-1">
+      <div
+        className="relative w-full cursor-pointer group"
+        style={{ height: 3, borderRadius: 2, background: 'rgba(157,0,255,0.1)' }}
+        onClick={e => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          seekTo((e.clientX - rect.left) / rect.width * duration);
+        }}
+      >
+        <div
+          className="h-full relative"
+          style={{
+            width: `${progressPct}%`,
+            borderRadius: 2,
+            background: inCrate && is24k
+              ? 'linear-gradient(to right, #bf953f, #fcf6ba)'
+              : 'linear-gradient(to right, #9D00FF, #FF0080)',
+            transition: 'background 0.8s ease',
+          }}
+        >
+          <div
+            className="absolute right-0 top-1/2 rounded-full opacity-0 group-active:opacity-100 transition-opacity"
+            style={{
+              width: 10, height: 10,
+              background: '#fff',
+              boxShadow: '0 0 6px rgba(157,0,255,0.6)',
+              transform: 'translate(50%, -50%)',
+            }}
+          />
+        </div>
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{formatTime(progress)}</span>
+        <span className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{formatTime(duration)}</span>
+      </div>
+    </div>
+  );
+});
+
+const TimeCode = React.memo(function TimeCode({ isFetchingMore }: { isFetchingMore: boolean }) {
+  const { progress, duration } = usePlayerProgress();
+  return (
+    <div className="flex items-center gap-2 text-[10px] text-[#5B4F70] font-mono">
+      <span>{formatTime(progress)}</span>
+      <span>/</span>
+      <span>{formatTime(duration)}</span>
+      {isFetchingMore && (
+        <span className="flex items-center gap-1 text-[#9D00FF] ml-1">
+          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+          <span>loading more</span>
+        </span>
+      )}
+    </div>
+  );
+});
+
 export function Player() {
   const {
     currentTrack, isPlaying, isShuffle, isRepeat,
@@ -34,7 +127,6 @@ export function Player() {
     isRadioMode, backToLive, listenerCount, totalVisitors,
   } = usePlayer();
 
-  const { progress, duration } = usePlayerProgress();
   const crateCtx = useCrateSafe();
   const addToCrate = crateCtx?.addToCrate;
   const removeFromCrate = crateCtx?.removeFromCrate;
@@ -51,13 +143,12 @@ export function Player() {
   const videoId = currentTrack?.id.videoId || '';
   const thumb = getMaxResThumbnail(videoId);
   const thumbHigh = thumb;
-  const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
   const VolumeIcon = volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2;
 
   const inCrate = currentTrack ? isInCrate(currentTrack.id.videoId) : false;
   const isAdding = currentTrack ? addingIds.has(currentTrack.id.videoId) : false;
 
-
+  const closeBrowser = React.useCallback(() => setIsBrowserOpen(false), []);
 
   const handleCrate = () => {
     if (!currentTrack) return;
@@ -82,29 +173,7 @@ export function Player() {
       className="fixed bottom-[44px] md:bottom-0 left-0 right-0 z-50 md:border-t md:border-[#2A0060] border-b-0 mb-0 pb-0"
       style={{ background: 'linear-gradient(to top, #06000F 0%, #0D001E 100%)' }}
     >
-      {/* Progress bar */}
-      <div
-        className="relative h-1 w-full cursor-pointer group md:block hidden"
-        style={{ background: '#1a003a' }}
-        onClick={e => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const ratio = (e.clientX - rect.left) / rect.width;
-          seekTo(ratio * duration);
-        }}
-      >
-        <div
-          className="h-full relative"
-          style={{
-            width: `${progressPct}%`,
-            background: inCrate && is24k
-              ? 'linear-gradient(to right, #bf953f, #fcf6ba)'
-              : 'linear-gradient(to right, #9D00FF, #FF0080)',
-            transition: 'background 0.8s ease',
-          }}
-        >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
-      </div>
+      <DesktopProgressBar inCrate={inCrate} is24k={is24k} />
 
       <div className="max-w-screen-2xl mx-auto px-4 py-1.5 hidden md:block">
         {/* ── Desktop layout ───────────────────────────────────────────────── */}
@@ -208,17 +277,7 @@ export function Player() {
                 <Repeat className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-[#5B4F70] font-mono">
-              <span>{formatTime(progress)}</span>
-              <span>/</span>
-              <span>{formatTime(duration)}</span>
-              {isFetchingMore && (
-                <span className="flex items-center gap-1 text-[#9D00FF] ml-1">
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                  <span>loading more</span>
-                </span>
-              )}
-            </div>
+            <TimeCode isFetchingMore={isFetchingMore} />
           </div>
 
           {/* Right: Crate + Browse + Visualizer + Volume */}
@@ -396,43 +455,7 @@ export function Player() {
           </div>
         </div>
 
-        {/* Row 2: Progress bar */}
-        <div className="px-3 pb-1">
-          <div
-            className="relative w-full cursor-pointer group"
-            style={{ height: 3, borderRadius: 2, background: 'rgba(157,0,255,0.1)' }}
-            onClick={e => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              seekTo((e.clientX - rect.left) / rect.width * duration);
-            }}
-          >
-            <div
-              className="h-full relative"
-              style={{
-                width: `${progressPct}%`,
-                borderRadius: 2,
-                background: inCrate && is24k
-                  ? 'linear-gradient(to right, #bf953f, #fcf6ba)'
-                  : 'linear-gradient(to right, #9D00FF, #FF0080)',
-                transition: 'background 0.8s ease',
-              }}
-            >
-              <div
-                className="absolute right-0 top-1/2 rounded-full opacity-0 group-active:opacity-100 transition-opacity"
-                style={{
-                  width: 10, height: 10,
-                  background: '#fff',
-                  boxShadow: '0 0 6px rgba(157,0,255,0.6)',
-                  transform: 'translate(50%, -50%)',
-                }}
-              />
-            </div>
-          </div>
-          <div className="flex justify-between mt-1">
-            <span className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{formatTime(progress)}</span>
-            <span className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{formatTime(duration)}</span>
-          </div>
-        </div>
+        <MobileProgressBar inCrate={inCrate} is24k={is24k} />
 
         {/* Row 3: shuffle | prev | play | next | repeat */}
         <div className="flex items-center justify-between px-5 pb-3">
@@ -503,7 +526,7 @@ export function Player() {
       </div>
 
       {/* Track Browser panel */}
-      <TrackBrowser isOpen={isBrowserOpen} onClose={() => setIsBrowserOpen(false)} />
+      <TrackBrowser isOpen={isBrowserOpen} onClose={closeBrowser} />
     </div>
   );
 }
