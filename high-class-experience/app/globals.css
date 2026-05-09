@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-black text-white overflow-x-hidden;
+  }
+
+  ::selection {
+    background-color: rgba(212, 175, 55, 0.25);
+    color: #ffffff;
+  }
+}
+
+@layer components {
+  /* Gold outline pill — primary CTA */
+  .btn-gold {
+    @apply inline-flex items-center justify-center
+           font-mono text-[11px] tracking-[0.25em] uppercase
+           px-8 py-4 rounded-full
+           border border-gold text-gold
+           transition-all duration-500
+           hover:bg-gold hover:text-black;
+  }
+
+  /* Ghost pill — secondary CTA */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center
+           font-mono text-[11px] tracking-[0.25em] uppercase
+           px-8 py-4 rounded-full
+           border border-white/20 text-white/70
+           transition-all duration-500
+           hover:border-white/50 hover:text-white;
+  }
+
+  /* Frosted glass panel — Bugatti-inspired glassmorphism */
+  .glass-panel {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    @apply bg-black/40 border border-gold/[0.12];
+  }
+
+  /* Section eyebrow label */
+  .section-label {
+    @apply font-mono text-[10px] tracking-[0.35em] uppercase text-gold;
+  }
+
+  /* Hairline divider — horizontal rule */
+  .hairline {
+    @apply h-px w-full bg-gold/[0.12];
+  }
+}
