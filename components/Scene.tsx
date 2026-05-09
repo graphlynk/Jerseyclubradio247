@@ -14,7 +14,7 @@
 
 import { useRef, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Float } from '@react-three/drei'
+import { Float } from '@react-three/drei'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import * as THREE from 'three'
@@ -94,20 +94,12 @@ function SceneContent() {
 
   return (
     <>
-      {/* Ambient fill */}
-      <ambientLight intensity={0.1} />
-
-      {/* Gold key light — gives the torus its signature warm highlight */}
-      <pointLight position={[6, 6, 6]} intensity={4} color="#D4AF37" />
-
-      {/* White fill from opposite side — keeps shadows from going pure black */}
-      <pointLight position={[-8, -4, 5]} intensity={2} color="#ffffff" />
-
-      {/* Warm rim light from below — adds depth */}
-      <pointLight position={[0, -8, -4]} intensity={1.2} color="#C9A227" />
-
-      {/* HDR environment for metallic reflections */}
-      <Environment preset="studio" />
+      <ambientLight intensity={0.15} />
+      <pointLight position={[6, 6, 6]} intensity={6} color="#D4AF37" />
+      <pointLight position={[-8, -4, 5]} intensity={3} color="#ffffff" />
+      <pointLight position={[0, -8, -4]} intensity={2} color="#C9A227" />
+      <pointLight position={[0, 8, -6]} intensity={2.5} color="#fffbe6" />
+      <pointLight position={[10, 0, 2]} intensity={1.5} color="#D4AF37" />
 
       <group ref={groupRef}>
         {/* ── Primary torus — polished metallic gold ── */}
