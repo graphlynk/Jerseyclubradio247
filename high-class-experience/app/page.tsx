@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Nav from '@/components/Nav'
+import AnimatedSwirls from '@/components/AnimatedSwirls'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -183,12 +184,27 @@ export default function Home() {
             Exclusive Events &nbsp;·&nbsp; Members Only
           </p>
 
-          <h1 className="hero-reveal font-serif font-light uppercase leading-[0.92] tracking-[0.1em] text-white mb-10"
-            style={{ fontSize: 'clamp(3.2rem, 10vw, 7.5rem)' }}
+          {/*
+           * Logo mark: animated swirls orbit behind the stacked wordmark.
+           * The SVG uses overflow:visible so the ellipses extend beyond the
+           * container without clipping. The negative margin pulls the swirl
+           * cloud flush with the text on all sides.
+           */}
+          <div className="hero-reveal relative flex items-center justify-center mb-10"
+               style={{ minHeight: 'clamp(12rem, 28vw, 22rem)' }}
           >
-            High Class<br />
-            <em className="not-italic text-gold">Experience</em>
-          </h1>
+            {/* Animated oval flourishes — gold, behind the text */}
+            <AnimatedSwirls className="absolute inset-0 w-full h-full" />
+
+            {/* Wordmark — sits above the swirls */}
+            <h1
+              className="relative z-10 font-serif font-light uppercase leading-[0.88] tracking-[0.1em] text-white"
+              style={{ fontSize: 'clamp(3.2rem, 10vw, 7.5rem)' }}
+            >
+              High Class<br />
+              <em className="not-italic text-gold">Experience</em>
+            </h1>
+          </div>
 
           <p className="hero-reveal font-serif text-base md:text-lg text-white/45 leading-relaxed max-w-sm mx-auto mb-14 italic">
             Curated luxury events crafted for those who demand

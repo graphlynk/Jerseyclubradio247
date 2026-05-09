@@ -55,3 +55,18 @@
     @apply h-px w-full bg-gold/[0.12];
   }
 }
+
+/* ── Swirl keyframes ────────────────────────────────────────────────────────
+   Used by AnimatedSwirls.tsx via inline animationName style.
+   transform-box + transform-origin are set on the element itself so each
+   ellipse rotates around its own geometric center.
+──────────────────────────────────────────────────────────────────────────── */
+@keyframes swirlCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes swirlCCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
