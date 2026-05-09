@@ -5,6 +5,12 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Hide browser cursor globally — Cursor.tsx renders the custom one */
+    cursor: none;
+  }
+
+  * {
+    cursor: none !important;
   }
 
   body {
@@ -12,13 +18,13 @@
   }
 
   ::selection {
-    background-color: rgba(212, 175, 55, 0.25);
+    background-color: rgba(212, 175, 55, 0.22);
     color: #ffffff;
   }
 }
 
 @layer components {
-  /* Gold outline pill — primary CTA */
+  /* ── Gold outline pill — primary CTA ─────────────────────────────────── */
   .btn-gold {
     @apply inline-flex items-center justify-center
            font-mono text-[11px] tracking-[0.25em] uppercase
@@ -28,7 +34,7 @@
            hover:bg-gold hover:text-black;
   }
 
-  /* Ghost pill — secondary CTA */
+  /* ── Ghost pill — secondary CTA ──────────────────────────────────────── */
   .btn-ghost {
     @apply inline-flex items-center justify-center
            font-mono text-[11px] tracking-[0.25em] uppercase
@@ -38,29 +44,29 @@
            hover:border-white/50 hover:text-white;
   }
 
-  /* Frosted glass panel — Bugatti-inspired glassmorphism */
+  /* ── Frosted glass card ───────────────────────────────────────────────── */
   .glass-panel {
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     @apply bg-black/40 border border-gold/[0.12];
   }
 
-  /* Section eyebrow label */
+  /* ── Section eyebrow label ───────────────────────────────────────────── */
   .section-label {
     @apply font-mono text-[10px] tracking-[0.35em] uppercase text-gold;
   }
 
-  /* Hairline divider — horizontal rule */
+  /* ── Hairline divider ────────────────────────────────────────────────── */
   .hairline {
     @apply h-px w-full bg-gold/[0.12];
   }
 }
 
-/* ── Swirl keyframes ────────────────────────────────────────────────────────
-   Used by AnimatedSwirls.tsx via inline animationName style.
-   transform-box + transform-origin are set on the element itself so each
-   ellipse rotates around its own geometric center.
-──────────────────────────────────────────────────────────────────────────── */
+/* ── Swirl orbit keyframes ────────────────────────────────────────────────────
+   Each ellipse in AnimatedSwirls.tsx references these by name via inline style.
+   transform-box + transform-origin are set on the element so each rotates
+   around its own geometric centre.
+───────────────────────────────────────────────────────────────────────────── */
 @keyframes swirlCW {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
@@ -69,4 +75,19 @@
 @keyframes swirlCCW {
   from { transform: rotate(0deg); }
   to   { transform: rotate(-360deg); }
+}
+
+/* ── Service description slide — max-height transition ───────────────────────
+   Tailwind's group-hover:max-h-* classes handle the reveal;
+   this rule ensures a smooth ease for the height change.
+───────────────────────────────────────────────────────────────────────────── */
+.service-desc {
+  transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-top  0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity     0.35s ease;
+  opacity: 0.35;
+}
+
+.group:hover .service-desc {
+  opacity: 1;
 }
